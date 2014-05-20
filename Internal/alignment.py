@@ -6,21 +6,55 @@ from gumpy.nexus.fitting import Fitting, GAUSSIAN_FITTING
 from gumpy.commons import sics
 from Internal import sicsext
 from java.lang import Double
+
 # Script control setup area
 # script info
 __script__.title = 'Device Alignment'
 __script__.version = ''
-#pact = Act('previous_step()', '<- Previous Step')
-    
+
 G1 = Group('Scan on device')
-device_name = Par('string', 'dummy_motor', options = ['dummy_motor'], command = 'update_axis_name()')
-scan_start = Par('float', 0)
-scan_stop = Par('float', 0)
-number_of_points = Par('int', 0)
+device_name = Par('string', 'dummy_motor', options = sicsext.getDrivables(), command = 'update_axis_name()')
+device_name.title = 'Device'
+scan_start = Par('float', 179.619)
+scan_start.title = 'Start'
+scan_stop = Par('float', 179.624)
+scan_stop.title = 'Stop'
+
+#number_of_points = Par('int', 0)
+
+# step count
+sc_enabled = Par('bool', True, command = 'set_sc_enabled()')
+sc_enabled.title = 'Enable'
+sc_count = Par('int', 31)
+sc_count.title = 'Data Points'
+
+# step width
+sw_enabled = Par('bool', False, command = 'set_sw_enabled()')
+sw_enabled.title = 'Enable'
+sw_width = Par('float', 0.0001)
+sw_width.title = 'Step Width'
+sw_width.enabled = False
+
+def set_sc_enabled():
+    enabled = sc_enabled.value    
+    sc_count.enabled = enabled   
+     
+    sw_enabled.value = not enabled
+    sw_width.enabled = not enabled
+
+def set_sw_enabled():
+    enabled = sw_enabled.value
+    sw_width.enabled = enabled
+     
+    sc_enabled.value = not enabled
+    sc_count.enabled = not enabled
+
 scan_mode = Par('string', 'time', options = ['time', 'count'])
-scan_mode.enabled = True
+scan_mode.title = 'Scan Mode'
 scan_preset = Par('int', 0)
-act1 = Act('scan_device()', 'Scan on Device')
+scan_preset.title = 'Scan Preset'
+
+act_scan_device = Act('scan_device()', 'Scan on Device')
 def scan_device():
     aname = device_name.value
     try:
@@ -28,9 +62,11 @@ def scan_device():
             aname = 'dummy_motor'
     except:
         pass
+    
     axis_name.value = aname
     slog('runscan ' + str(device_name.value) + ' ' + str(scan_start.value) + ' ' + str(scan_stop.value) \
                     + ' ' + str(number_of_points.value) + ' ' + str(scan_mode.value) + ' ' + str(scan_preset.value))
+    
     sicsext.runscan(device_name.value, scan_start.value, scan_stop.value, number_of_points.value, 
                     scan_mode.value, scan_preset.value, load_experiment_data, True, \
                     'HISTOGRAM_T')
@@ -40,12 +76,10 @@ def scan_device():
     if auto_fit.value :
         fit_curve()
     
-devices = sicsext.getDrivables()
-device_name.options = devices
 def update_axis_name():
     axis_name.value = device_name.value
         
-G1.add(device_name, scan_start, scan_stop, number_of_points, scan_mode, scan_preset, act1)
+G1.add(device_name, scan_start, scan_stop, sc_enabled, sc_count, sw_enabled, sw_width, scan_mode, scan_preset, act_scan_device)
 
 G2 = Group('Fitting')
 data_name = Par('string', 'total_counts', \

@@ -109,3 +109,6 @@ tc1_sensorB = $entry/sample/tc1/sensor/sensorValueB
 tc1_sensorC = $entry/sample/tc1/sensor/sensorValueC
 tc1_sensorD = $entry/sample/tc1/sensor/sensorValueD
 magnetrot = $entry/sample/magnetrot/sensor
+
+hmm = $entry/data/hmm_xy
+scanVariable = entry1/instrument/crystal/m2om
