@@ -2,12 +2,13 @@ from gumpy.nexus.fitting import Fitting, GAUSSIAN_FITTING
 
 import math
 
+# auth: David
 # Script control setup area
 # script info
 __script__.title = 'HMM Tube Export'
 __script__.version = '1.0'
 
-__FOLDER_PATH__ = 'D:/users/kookaburra/Hot Commissioning/Temp Plot Data Repository'
+__FOLDER_PATH__ = 'V:/shared/Hot Commissioning/Temp Plot Data Repository'
 
 if not os.path.exists(__FOLDER_PATH__):
     os.makedirs(__FOLDER_PATH__)

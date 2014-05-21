@@ -748,7 +748,7 @@ def __run_script__(fns):
 
     # reduction
         
-    path = 'D:/Users/kookaburra/Desktop/David/Kookaburra/'
+    path = 'V:/shared/Hot Commissioning/Temp Plot Data Repository/'
     
     #ds = LoadBT5(path, ['CRc8a001.bt5', 'CRc8a002.bt5', 'CRc8a003.bt5', 'CRc8a004.bt5', 'CRc8a005.bt5', 'CRc8a006.bt5', 'CRc8a007.bt5'])
     #em = LoadBT5(path, ['CRemp001.bt5', 'CRemp002.bt5', 'CRemp003.bt5', 'CRemp004.bt5', 'CRemp005.bt5', 'CRemp006.bt5', 'CRemp007.bt5'] )
@@ -770,7 +770,7 @@ def __run_script__(fns):
     PlotReducedDataset(Plot1, em, 'EMP')
     
     ds.CorrectData(em)
-    ds.Save(r'D:\Users\kookaburra\Desktop\David\test.txt')
+    ds.Save('V:/shared/Hot Commissioning/Temp Plot Data Repository/test1.txt')
 
     PlotReducedDataset(Plot1, ds, 'Cor')
         
