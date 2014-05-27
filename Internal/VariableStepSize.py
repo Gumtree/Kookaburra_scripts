@@ -49,14 +49,14 @@ def __run_script__(fns):
     
     empLevel = 0.76
     bkgLevel = 0.98757
-    dOmega = 2.3E-6
+    dOmega = 4.6E-6
     gDQv = 0.0586
     #gDQh = 0
     
-    MainDeadTime = 4.0E-5
-    TransDeadTime = 1.26E-5
+    MainDeadTime = 2.78E-6
+    TransDeadTime = 3.15E-5
     
-    angle_ref =  179.6221528 # 180.0
+    angle_ref =  179.622 # 180.0 or 0.0
     
     scan = { 'angles': [], 'presets': [] }
     InitLinearSteps(  scan, measurements=33, step_size=6e-5, preset=50000 ) # angle_ref - (steps/2)*step_size

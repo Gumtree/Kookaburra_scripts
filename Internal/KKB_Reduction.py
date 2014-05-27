@@ -10,21 +10,23 @@ __script__.version = '1.0'
 '''
 
 combine_tube0 = Par('bool', True)
-combine_tube0.title = '     - Tube 0'
+combine_tube0.title = '  Tube 0'
 
 combine_tube1 = Par('bool', True)
-combine_tube1.title = '     - Tube 1'
+combine_tube1.title = '    Tube 1'
 
 combine_tube2 = Par('bool', True)
-combine_tube2.title = '     - Tube 2'
+combine_tube2.title = '    Tube 2'
 
 combine_tube3 = Par('bool', True)
-combine_tube3.title = '     - Tube 3'
+combine_tube3.title = '    Tube 3'
 
 combine_tube4 = Par('bool', True)
-combine_tube4.title = '     - Tube 4'
+combine_tube4.title = '    Tube 4'
         
-Group('Select Tube(s) of Interest:').add(combine_tube0, combine_tube1, combine_tube2, combine_tube3, combine_tube4)
+g0 = Group('Select Tube(s) of Interest:')
+g0.numColumns = 5
+g0.add(combine_tube0, combine_tube1, combine_tube2, combine_tube3, combine_tube4)
 
 
 Wavelength = Par('float', '4.74')
@@ -45,7 +47,7 @@ Thickness_FromFile = Par('float', 'NaN')
 Thickness_FromFile.title = ''
 Thickness_FromFile.enabled = False
 
-MainDeadTime = Par('float', '4e-5')
+MainDeadTime = Par('float', '2.78e-6')
 MainDeadTime.title = 'Main Dead Time (s)'
 MainDeadTime.enabled = False
 MainDeadTime_Patching = Par('bool', False, command='MainDeadTime.enabled = MainDeadTime_Patching.value')
@@ -54,7 +56,7 @@ MainDeadTime_FromFile = Par('float', 'NaN')
 MainDeadTime_FromFile.title = ''
 MainDeadTime_FromFile.enabled = False
 
-TransDeadTime = Par('float', '1.26e-5')
+TransDeadTime = Par('float', '3.15e-5')
 TransDeadTime.title = 'Trans Dead Time (s)'
 TransDeadTime.enabled = False
 TransDeadTime_Patching = Par('bool', False, command='TransDeadTime.enabled = TransDeadTime_Patching.value')
@@ -73,7 +75,7 @@ bkgLevel_FromFile.title = ''
 bkgLevel_FromFile.enabled = False
 
 dOmega = Par('float', '2.3e-6')
-dOmega.title = 'dOmega'
+dOmega.title = 'dOmega (Ster)'
 dOmega.enabled = False
 dOmega_Patching = Par('bool', False, command='dOmega.enabled = dOmega_Patching.value')
 dOmega_Patching.title = ''
@@ -82,7 +84,7 @@ dOmega_FromFile.title = ''
 dOmega_FromFile.enabled = False
 
 gDQv = Par('float', '0.0586')
-gDQv.title = 'Q divergence (1/A)'
+gDQv.title = 'vertical Q divergence (1/A)'
 gDQv.enabled = False
 gDQv_Patching = Par('bool', False, command='gDQv.enabled = gDQv_Patching.value')
 gDQv_Patching.title = ''
@@ -90,9 +92,15 @@ gDQv_FromFile = Par('float', 'NaN')
 gDQv_FromFile.title = ''
 gDQv_FromFile.enabled = False
 
+bm1rate = Par('float', '43.0')
+bm1rate.title = 'bm1 count rate (counts/s)'
+bm1rate.enabled = False
+bm1rate_Patching = Par('bool', False, command='bm1rate.enabled = bm1rate_Patching.value')
+bm1rate_Patching.title = ''
+
 g1 = Group('Parameter Patching')
 g1.numColumns = 3
-g1.add(Wavelength_Patching, Wavelength, Wavelength_FromFile, Thickness_Patching, Thickness, Thickness_FromFile, MainDeadTime_Patching, MainDeadTime, MainDeadTime_FromFile, TransDeadTime_Patching, TransDeadTime, TransDeadTime_FromFile, bkgLevel_Patching, bkgLevel, bkgLevel_FromFile, dOmega_Patching, dOmega, dOmega_FromFile, gDQv_Patching, gDQv, gDQv_FromFile)
+g1.add(Wavelength_Patching, Wavelength, Wavelength_FromFile, Thickness_Patching, Thickness, Thickness_FromFile, MainDeadTime_Patching, MainDeadTime, MainDeadTime_FromFile, TransDeadTime_Patching, TransDeadTime, TransDeadTime_FromFile, bkgLevel_Patching, bkgLevel, bkgLevel_FromFile, dOmega_Patching, dOmega, dOmega_FromFile, gDQv_Patching, gDQv, gDQv_FromFile, bm1rate_Patching, bm1rate)
 
 parametersShowBtn = Act('parametersShow()', 'show parameters')
 
@@ -413,8 +421,12 @@ class ReductionDataset:
 
         self.DetCts    = list(data)  
         self.ErrDetCts = [sqrt(cts) for cts in self.DetCts]
-        self.MonCts    = list(ds.bm1_counts)
         
+        if not bm1rate_Patching.value:
+            self.MonCts = list(ds.bm1_counts)
+        else:
+            self.MonCts = [bm1rate.value * time for time in self.CountTimes]
+
         # transmission counts
         if abs(self.Wavelength - 4.74) < 0.01:
             tid = 10
@@ -770,7 +782,12 @@ def __run_script__(fns):
     PlotReducedDataset(Plot1, em, 'EMP')
     
     ds.CorrectData(em)
-    ds.Save('V:/shared/Hot Commissioning/Temp Plot Data Repository/test1.txt')
+    
+    # get name of first sample file
+    filename = os.path.basename(dsFilePaths[0])
+    filename = filename[:filename.find('.nx.hdf')]
+    
+    ds.Save('V:/shared/Hot Commissioning/Temp Plot Data Repository/' + filename + '.txt')
 
     PlotReducedDataset(Plot1, ds, 'Cor')
         

@@ -28,13 +28,16 @@ combine_tube3.title = '     - Tube 3'
 combine_tube4 = Par('bool', True)
 combine_tube4.title = '     - Tube 4'
 
+combine_tube6 = Par('bool', False)
+combine_tube6.title = '     - Tube 6'
+
 combine_mode = Par('string', 'individual', options = ['individual', 'combined'])
 combine_mode.title = 'Mode'
 
 check_fitting = Par('bool', False)
 check_fitting.title = 'Fitting'
         
-Group('Select Tube(s) of Interest:').add(combine_tube0, combine_tube1, combine_tube2, combine_tube3, combine_tube4, combine_mode, check_fitting)
+Group('Select Tube(s) of Interest:').add(combine_tube0, combine_tube1, combine_tube2, combine_tube3, combine_tube4, combine_tube6, combine_mode, check_fitting)
 
 check_tube9 = Par('bool', False)
 check_tube9.title = '     - Tube 9: Si (311)'
@@ -70,49 +73,9 @@ def proc_fn(path):
      
     n = shape[0]
     
+    # tubes
     data = zeros(n)
     data.title = 'Detector Counts'
-
-    # transmission
-    tids = []
-    if check_tube9.value:
-        tids.append(9)
-    if check_tube10.value:
-        tids.append(10)
-        
-    Plot2.clear()
-    for tid in tids:
-        if ds.hmm.ndim == 4:
-            data[:] = ds.hmm[:, 0, :, tid].sum(0) # hmm
-        else:
-            data[:] = ds.hmm[:, :, tid].sum(0)  # hmm_xy
-        
-        if data.size == 1:
-            data[0] = data[0] * 1.0 / ds.time
-        else:
-            data[:] = data[:] * 1.0 / ds.time
-            
-        data.var[:] = 0 # total_counts / (ds.time * ds.time)
-
-        axis0 = data.axes[0]
-        axis0[:] = scanVariable[:]
-                    
-        dataF = data.float_copy()
-        if tid == 9:
-            dataF.title = 'Tube %i: Si (311)' % tid
-        elif tid == 10:
-            dataF.title = 'Tube %i: Si (111)' % tid
-        else:
-            dataF.title = 'Tube %i' % tid
-        
-        Plot2.add_dataset(dataF)
-        Plot2.title   = 'Count Rate (individual)'
-        
-    if Plot2.ds is not None:
-        Plot2.x_label = 'angle in deg'
-        Plot2.y_label = 'counts per sec'
-    
-    # tubes
     
     tids = []
     if combine_tube0.value:
@@ -125,7 +88,9 @@ def proc_fn(path):
         tids.append(3)
     if combine_tube4.value:
         tids.append(4)
-    
+    if combine_tube6.value:
+        tids.append(6)
+        
     Plot1.clear()    
     if str(combine_mode.value) == 'individual':
         for tid in tids:
@@ -176,6 +141,48 @@ def proc_fn(path):
         Plot1.x_label = 'angle in deg'
         Plot1.y_label = 'counts per sec'
     
+    # transmission
+    data = zeros(n)
+    data.title = 'Detector Counts'
+    
+    tids = []
+    if check_tube9.value:
+        tids.append(9)
+    if check_tube10.value:
+        tids.append(10)
+        
+    Plot2.clear()
+    for tid in tids:
+        if ds.hmm.ndim == 4:
+            data[:] = ds.hmm[:, 0, :, tid].sum(0) # hmm
+        else:
+            data[:] = ds.hmm[:, :, tid].sum(0)  # hmm_xy
+        
+        if data.size == 1:
+            data[0] = data[0] * 1.0 / ds.time
+        else:
+            data[:] = data[:] * 1.0 / ds.time
+            
+        data.var[:] = 0 # total_counts / (ds.time * ds.time)
+
+        axis0 = data.axes[0]
+        axis0[:] = scanVariable[:]
+                    
+        dataF = data.float_copy()
+        if tid == 9:
+            dataF.title = 'Tube %i: Si (311)' % tid
+        elif tid == 10:
+            dataF.title = 'Tube %i: Si (111)' % tid
+        else:
+            dataF.title = 'Tube %i' % tid
+        
+        Plot2.add_dataset(dataF)
+        Plot2.title   = 'Count Rate (individual)'
+        
+    if Plot2.ds is not None:
+        Plot2.x_label = 'angle in deg'
+        Plot2.y_label = 'counts per sec'
+        
     # fitting
     if check_fitting.value and (Plot1.ds is not None) and (len(Plot1.ds) == 1):
         ds0 = Plot1.ds[0]
