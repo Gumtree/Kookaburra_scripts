@@ -1,12 +1,11 @@
+
+__script__.title = 'HMM Tube Export'
+__script__.version = '1.0'
+
 from gumpy.nexus.fitting import Fitting, GAUSSIAN_FITTING
 
 import math
 
-# auth: David
-# Script control setup area
-# script info
-__script__.title = 'HMM Tube Export'
-__script__.version = '1.0'
 
 __FOLDER_PATH__ = 'V:/shared/Hot Commissioning/Temp Plot Data Repository'
 
@@ -14,43 +13,60 @@ if not os.path.exists(__FOLDER_PATH__):
     os.makedirs(__FOLDER_PATH__)
 
 combine_tube0 = Par('bool', True)
-combine_tube0.title = '     - Tube 0'
+combine_tube0.title = ' Tube 0'
 
 combine_tube1 = Par('bool', True)
-combine_tube1.title = '     - Tube 1'
+combine_tube1.title = '   Tube 1'
 
 combine_tube2 = Par('bool', True)
-combine_tube2.title = '     - Tube 2'
+combine_tube2.title = '   Tube 2'
 
 combine_tube3 = Par('bool', True)
-combine_tube3.title = '     - Tube 3'
+combine_tube3.title = '   Tube 3'
 
 combine_tube4 = Par('bool', True)
-combine_tube4.title = '     - Tube 4'
+combine_tube4.title = '   Tube 4'
 
 combine_tube6 = Par('bool', False)
-combine_tube6.title = '     - Tube 6'
+combine_tube6.title = '   Tube 6'
+
+g0 = Group('Select Tube(s) of Interest:')
+g0.numColumns = 6
+g0.add(combine_tube0, combine_tube1, combine_tube2, combine_tube3, combine_tube4, combine_tube6)
+
+check_tube9 = Par('bool', True)
+check_tube9.title = ' Tube 9: Si (311)'
+
+check_tube10 = Par('bool', False)
+check_tube10.title = '   Tube 10: Si (111)'
+        
+g1 = Group('Select Transmission Tube(s) of Interest:')
+g1.numColumns = 2
+g1.add(check_tube9, check_tube10)
+  
+scan_variable = Par('string', 'm2om [deg]', options = ['m1chi [deg]', 'm1om [deg]', 'm1x [mm]', 'm2chi [deg]', 'm2om [deg]', 'm2x [mm]'])
+scan_variable.title = 'Scan Variable'
 
 combine_mode = Par('string', 'individual', options = ['individual', 'combined'])
 combine_mode.title = 'Mode'
+      
+scan_variable_sorting = Par('bool', True)
+scan_variable_sorting.title = 'Sorting'
 
 check_fitting = Par('bool', False)
 check_fitting.title = 'Fitting'
-        
-Group('Select Tube(s) of Interest:').add(combine_tube0, combine_tube1, combine_tube2, combine_tube3, combine_tube4, combine_tube6, combine_mode, check_fitting)
 
-check_tube9 = Par('bool', False)
-check_tube9.title = '     - Tube 9: Si (311)'
+Group('Settings').add(scan_variable, combine_mode, scan_variable_sorting, check_fitting)
 
-check_tube10 = Par('bool', False)
-check_tube10.title = '     - Tube 10: Si (111)'
-        
-Group('Select Transmission Tube(s) of Interest:').add(check_tube9, check_tube10)
 
 # export to csv
 export = Act('export_clicked()', 'Export to CSV')
 
 def proc_fn(path):
+    
+    basename = os.path.basename(str(path))
+    basename = basename[:basename.find('.nx.hdf')]
+    
     ds = df[str(path)]
     ds.__iDictionary__.addEntry('hmm', 'entry1/data/hmm')
     #ds.__iDictionary__.addEntry('hmm', 'entry1/data/hmm_xy')
@@ -63,8 +79,19 @@ def proc_fn(path):
     ds.__iDictionary__.addEntry('m2x', 'entry1/instrument/crystal/m2x')
     ds.__iDictionary__.addEntry('m2y', 'entry1/instrument/crystal/m2y')
     ds.__iDictionary__.addEntry('mdet', 'entry1/instrument/crystal/mdet')
+    ds.__iDictionary__.addEntry('ss1u', 'entry1/instrument/slits/ss1u')
+    ds.__iDictionary__.addEntry('ss1d', 'entry1/instrument/slits/ss1d')
+    ds.__iDictionary__.addEntry('ss1r', 'entry1/instrument/slits/ss1r')
+    ds.__iDictionary__.addEntry('ss1l', 'entry1/instrument/slits/ss1l')
     
-    scanVariable = ds.m2om
+    scanVariable = str(scan_variable.value)
+    scanVariable = scanVariable[:scanVariable.find(' ')]
+    scanVariable = ds[scanVariable]
+    
+    sorting = scan_variable_sorting.value
+    if sorting:
+        info = sorted(enumerate(scanVariable), key=lambda item:item[1])
+        scanVariable = [item[1] for item in info]
     
     shape = ds.shape
     if shape[0] <= 1:
@@ -75,7 +102,6 @@ def proc_fn(path):
     
     # tubes
     data = zeros(n)
-    data.title = 'Detector Counts'
     
     tids = []
     if combine_tube0.value:
@@ -103,6 +129,8 @@ def proc_fn(path):
                 data[0] = data[0] * 1.0 / ds.time
             else:
                 data[:] = data[:] * 1.0 / ds.time
+                if sorting:
+                    data[:] = [data[item[0]] for item in info] # sorting
                 
             data.var[:] = 0 # total_counts / (ds.time * ds.time)
 
@@ -113,7 +141,8 @@ def proc_fn(path):
             dataF.title = 'Tube %i' % tid
             
             Plot1.add_dataset(dataF)
-            Plot1.title   = 'Count Rate (individual)'
+        
+        Plot1.title = 'Count Rate (individual)'
             
     else:
         for tid in tids:
@@ -126,6 +155,8 @@ def proc_fn(path):
             data[0] = data[0] * 1.0 / ds.time
         else:
             data[:] = data[:] * 1.0 / ds.time
+            if sorting:
+                data[:] = [data[item[0]] for item in info] # sorting
             
         data.var[:] = 0 # total_counts / (ds.time * ds.time)
         
@@ -136,14 +167,15 @@ def proc_fn(path):
         
         Plot1.set_dataset(data)
         Plot1.title   = 'Count Rate (combined)'
+
+    Plot1.title = Plot1.title + ' ' + basename
     
     if Plot1.ds is not None:
-        Plot1.x_label = 'angle in deg'
+        Plot1.x_label = str(scan_variable.value)
         Plot1.y_label = 'counts per sec'
     
     # transmission
     data = zeros(n)
-    data.title = 'Detector Counts'
     
     tids = []
     if check_tube9.value:
@@ -162,6 +194,8 @@ def proc_fn(path):
             data[0] = data[0] * 1.0 / ds.time
         else:
             data[:] = data[:] * 1.0 / ds.time
+            if sorting:
+                data[:] = [data[item[0]] for item in info] # sorting
             
         data.var[:] = 0 # total_counts / (ds.time * ds.time)
 
@@ -177,10 +211,10 @@ def proc_fn(path):
             dataF.title = 'Tube %i' % tid
         
         Plot2.add_dataset(dataF)
-        Plot2.title   = 'Count Rate (individual)'
+        Plot2.title   = 'Count Rate (individual) ' + basename
         
     if Plot2.ds is not None:
-        Plot2.x_label = 'angle in deg'
+        Plot2.x_label = str(scan_variable.value)
         Plot2.y_label = 'counts per sec'
         
     # fitting
@@ -200,7 +234,8 @@ def proc_fn(path):
         fitting = Fitting(GAUSSIAN_FITTING)
         fitting.set_param('mean', xMax)
         fitting.set_param('sigma', math.fabs(0.0015 / 2.35482))
-        fitting.set_histogram(ds0, xMax - 0.0015, xMax + 0.0015)
+        fitting.set_histogram(ds0, xMax - 0.1, xMax + 0.1)
+        #fitting.set_histogram(ds0, xMax - 0.0015, xMax + 0.0015)
         
         for i in xrange(5):
             fit = fitting.fit()
@@ -215,17 +250,29 @@ def export_clicked():
     Plot1.clear()
     Plot2.clear()
     
+    basename = ''
+    
     fns = []
     for sds in __DATASOURCE__.getSelectedDatasets():
+        basename = os.path.basename(str(sds.getLocation()))
+        basename = basename[:basename.find('.nx.hdf')]
+    
         fns.append(sds.getLocation())
+        
     __run_script__(fns)
 
     p1 = (Plot1.ds is not None) and (len(Plot1.ds) >= 1)
     p2 = (Plot2.ds is not None) and (len(Plot2.ds) >= 1)
 
-    if p1 or p2:        
-        f = open(__FOLDER_PATH__ + '/KBB%07d.csv' % df[str(fns[0])].id, 'w+')
-        f.write('Angle')
+    if p1 or p2:
+        f = open(__FOLDER_PATH__ + '/KKB%07d.csv' % df[str(fns[0])].id, 'w+')
+        
+        variable     = str(scan_variable.value)
+        variableName = variable[:variable.find(' ')]
+        variableUnit = variable[(2+len(variableName)):-1]
+        
+        f.write(variableName)
+        columns = 0
         
         dsRef = None
         
@@ -235,16 +282,24 @@ def export_clicked():
             
             for ds in Plot1.ds:
                 if len(ds) == len(dsRef): # to ignore Gauss fit
-                    f.write(', %s' % str(ds.title).replace(',', ';'))
-                    
+                    f.write(', %s_%s' % (basename, str(ds.title).replace(',', ';').replace(' ','')))
+                    columns += 1
+
         if p2:
             if dsRef is None:
                 dsRef = Plot2.ds[0]
                 dsRefAngle = dsRef.axes[0]
 
             for ds in Plot2.ds:
-                f.write(', %s' % str(ds.title).replace(',', ';'))
+                title = str(ds.title)
+                
+                f.write(',  %s_%s' % (basename, title[:title.find(':')].replace(' ','')))
+                columns += 1
             
+        f.write('\n')
+        f.write(variableUnit)
+        for i in xrange(columns):
+            f.write(',c/s')
         f.write('\n')
         
         for i in xrange(len(dsRef)):

@@ -65,7 +65,7 @@ TransDeadTime_FromFile = Par('float', 'NaN')
 TransDeadTime_FromFile.title = ''
 TransDeadTime_FromFile.enabled = False
 
-bkgLevel = Par('float', '0.98757')
+bkgLevel = Par('float', '22800')
 bkgLevel.title = 'normalized BKG Level'
 bkgLevel.enabled = False
 bkgLevel_Patching = Par('bool', False, command='bkgLevel.enabled = bkgLevel_Patching.value')
@@ -98,11 +98,11 @@ bm1rate.enabled = False
 bm1rate_Patching = Par('bool', False, command='bm1rate.enabled = bm1rate_Patching.value')
 bm1rate_Patching.title = ''
 
+parametersShowBtn = Act('parametersShow()', 'show parameters')
+
 g1 = Group('Parameter Patching')
 g1.numColumns = 3
-g1.add(Wavelength_Patching, Wavelength, Wavelength_FromFile, Thickness_Patching, Thickness, Thickness_FromFile, MainDeadTime_Patching, MainDeadTime, MainDeadTime_FromFile, TransDeadTime_Patching, TransDeadTime, TransDeadTime_FromFile, bkgLevel_Patching, bkgLevel, bkgLevel_FromFile, dOmega_Patching, dOmega, dOmega_FromFile, gDQv_Patching, gDQv, gDQv_FromFile, bm1rate_Patching, bm1rate)
-
-parametersShowBtn = Act('parametersShow()', 'show parameters')
+g1.add(Wavelength_Patching, Wavelength, Wavelength_FromFile, Thickness_Patching, Thickness, Thickness_FromFile, MainDeadTime_Patching, MainDeadTime, MainDeadTime_FromFile, TransDeadTime_Patching, TransDeadTime, TransDeadTime_FromFile, bkgLevel_Patching, bkgLevel, bkgLevel_FromFile, dOmega_Patching, dOmega, dOmega_FromFile, gDQv_Patching, gDQv, gDQv_FromFile, bm1rate_Patching, bm1rate, parametersShowBtn)
 
 def parametersShow():
     def TryGet(ds, path):
@@ -143,13 +143,16 @@ empFiles = Par('string', '')
 empFiles.title = 'Files' 
 empFilesTakeBtn = Act('empFilesTake()', 'take from selection')
 
+empIgnorePts = Par('string', '')
+empIgnorePts.title = 'ignore data points' 
+
 empLevel = Par('float', '0')
 empLevel.title = 'empty level'
 empLevel_SampleCount = Par('int', '10')
 empLevel_SampleCount.title = 'tail points'
 empLevelCalcBtn = Act('empLevelCalc()', 'determine empty level')
 
-Group('Empty Scans').add(empFiles, empFilesTakeBtn, empLevel, empLevel_SampleCount, empLevelCalcBtn)
+Group('Empty Scans').add(empFiles, empFilesTakeBtn, empIgnorePts, empLevel, empLevel_SampleCount, empLevelCalcBtn)
 
 def empFilesTake():
     fns = None
@@ -203,7 +206,8 @@ def empLevelCalc():
 
     em = LoadNxHdf(emFilePaths)
     em.SortAngles()
-    
+    em = RemoveIgnoredRanges(em, empIgnorePts.value)
+
     empLevel.value = sum(em.DetCts[-sampleCount:]) / sampleCount
 
 
@@ -363,6 +367,37 @@ def TryGet(ds, path, default, forceDefault=False):
     except AttributeError:
         return default
 
+def RemoveIgnoredRanges(ds, ignorePtsStr):
+    
+    ignoredRanges = filter(None, str(ignorePtsStr).split(','))
+    if len(ignoredRanges) > 0:
+        
+        angleCount = len(ds.Angle)
+        toKeep = range(0, angleCount)
+        
+        for ignoredRange in ignoredRanges:
+            rangeItems = ignoredRange.split('-')
+            if ('' in rangeItems) or (len(rangeItems) < 1) or (len(rangeItems) > 2):
+                raise Exception('format in "ignore data points" is incorrect')
+            
+            # from 1 based to 0 based
+            start = int(rangeItems[0]) - 1
+            
+            if len(rangeItems) == 1:
+                end = start + 1
+            elif rangeItems[1]== '*':
+                end = angleCount
+            else:
+                end = float(rangeItems[1])
+            
+            for point in xrange(start, end):
+                if point in toKeep:
+                    toKeep.remove(point)
+                    
+        ds.KeepOnly(toKeep)
+        
+    return ds
+        
 class ReductionDataset:
             
     def __init__(self, path):
@@ -533,6 +568,13 @@ class ReductionDataset:
         self.ErrDetCts = [self.ErrDetCts[item[0]] for item in info]
         self.MonCts    = [self.MonCts   [item[0]] for item in info]
         self.TransCts  = [self.TransCts [item[0]] for item in info]
+        
+    def KeepOnly(self, toKeep):
+        self.Angle     = [self.Angle[i]     for i in toKeep]
+        self.DetCts    = [self.DetCts[i]    for i in toKeep]
+        self.ErrDetCts = [self.ErrDetCts[i] for i in toKeep]
+        self.MonCts    = [self.MonCts[i]    for i in toKeep]
+        self.TransCts  = [self.TransCts[i]  for i in toKeep]
 
     def FindZeroAngle(self):
         # find peak
@@ -776,6 +818,7 @@ def __run_script__(fns):
     print 'empty: ', ', '.join(emFilePaths) 
     em = LoadNxHdf(emFilePaths)
     em.SortAngles()
+    em = RemoveIgnoredRanges(em, empIgnorePts.value)
     em.FindZeroAngle()
     em.DetermineQVals()
     em.FindTWideCts()        
