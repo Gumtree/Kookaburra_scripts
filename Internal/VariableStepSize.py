@@ -38,7 +38,7 @@ steps_templates_dict['Comprehensive Scan for Si111'] = [
     [13, 6.0e-5, 1000],
     [15, 1.2e-4, 1000],
     [10, 3.0e-4, 1000],
-    [10, 6.0e-3, 1000],
+    [10, 6.0e-4, 1000],
     [16, 1.2e-3, 1000],
     [60, 3.0e-3, 1000]]
 steps_templates_dict['Comprehensive Scan for Si311'] = [
@@ -47,7 +47,7 @@ steps_templates_dict['Comprehensive Scan for Si311'] = [
     [13, 6.0e-5, 1000],
     [15, 1.2e-4, 1000],
     [10, 3.0e-4, 1000],
-    [10, 6.0e-3, 1000],
+    [10, 6.0e-4, 1000],
     [16, 1.2e-3, 1000],
     [60, 3.0e-3, 1000]]
 steps_templates_dict['Fast Scan'] = [
@@ -91,7 +91,7 @@ sample_thickness.title = 'Thickness (mm)'
 Group('Sample').add(sample_name, sample_description, sample_thickness)
 
 ## Crystal
-crystal_name = Par('string', 'unknown')
+crystal_name = Par('string', 'UNKNOWN')
 crystal_name.title = 'Name'
 crystal_name.enabled = False
 try:
@@ -251,7 +251,7 @@ def setEnabled(index):
 
 def getScan():
     
-    scan = { 'angles': [], 'presets': [] }
+    scan = { 'angles': [], 'presets': [], 'groups': [] }
     
     first = True
     angle = scan_reference.value
@@ -275,6 +275,7 @@ def getScan():
                 scan['angles' ].append(angle)
                 scan['presets'].append(preset)
             
+            scan['groups'].append(angle)
             for i in xrange(1, dataPoints):
                 angle += stepSize
                 scan['angles' ].append(angle)
@@ -293,6 +294,9 @@ def switchCrystal():
         
         elif 'Si311' in crystal:    
             crystal_name.value = 'Si111 (4.74 Angstroms)'
+            
+        else:
+            raise Exception('cannot access crystals')
 
 def startScan():
     
@@ -443,6 +447,35 @@ def startScan():
 def btnPlotSteps_clicked():
     scan = getScan()
     print 'range [%f, %f]' % (scan['angles'][0], scan['angles'][-1])
+    
+    try:
+        for mask in Plot1.masks:
+            Plot1.remove_mask(mask)
+    except:
+        pass
+    
+    if Plot1.get_dataset() is None:
+        scan_angleMin = builtin_min(scan['angles'])
+        scan_angleMax = builtin_max(scan['angles'])
+        
+        dummy = zeros(2)
+        dummy.axes[0] = [scan_angleMin, scan_angleMax]
+        
+        Plot1.add_dataset(dummy)
+    
+    inclusive = True
+    angles = scan['angles']
+    for i in xrange(1, len(angles)):
+        xL = angles[i-1]
+        xH = angles[i  ]
+                
+        Plot1.add_mask_1d(xL, xH, '', inclusive)
+        inclusive = not inclusive
+        
+    groups = scan['groups']
+    for i in xrange(len(groups)):
+        Plot1.add_mask_1d(groups[i], groups[i]+1e-12, str(i+1), True)
+
 
 def btnPlot_clicked():
     
@@ -682,7 +715,7 @@ def __run_script__(fns):
     global Plot1
     global Plot2
     global Plot3
-    
+        
     print 'please press "start scan" in scan box'
 
 def __dispose__():
