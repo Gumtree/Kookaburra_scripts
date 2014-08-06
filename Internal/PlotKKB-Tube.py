@@ -43,8 +43,14 @@ check_tube10.title = '   Tube 10: Si (111)'
 g1 = Group('Select Transmission Tube(s) of Interest:')
 g1.numColumns = 2
 g1.add(check_tube9, check_tube10)
-  
-scan_variable = Par('string', 'm2om [deg]', options = ['m1chi [deg]', 'm1om [deg]', 'm1x [mm]', 'm2chi [deg]', 'm2om [deg]', 'm2x [mm]'])
+
+scan_variable = Par('string', 'm2om [deg]', options = [
+    'pmom [deg]', 'pmchi [deg]', 'm1om [deg]', 'm1chi [deg]', 'm1x [mm]', 'm2om [deg]', 'm2chi [deg]', 'm2x [mm]', 'm2y [mm]', 'mdet [mm]',
+    'ss1u [mm]', 'ss1d [mm]', 'ss1l [mm]', 'ss1r [mm]',
+    'ss2u [mm]', 'ss2d [mm]', 'ss2l [mm]', 'ss2r [mm]',
+    'ss1hg [mm]', 'ss1ho [mm]', 'ss1vg [mm]', 'ss1vo [mm]',
+    'ss2hg [mm]', 'ss2ho [mm]', 'ss2vg [mm]', 'ss2vo [mm]'])
+
 scan_variable.title = 'Scan Variable'
 
 combine_mode = Par('string', 'individual', options = ['individual', 'combined'])
@@ -79,10 +85,24 @@ def proc_fn(path):
     ds.__iDictionary__.addEntry('m2x', 'entry1/instrument/crystal/m2x')
     ds.__iDictionary__.addEntry('m2y', 'entry1/instrument/crystal/m2y')
     ds.__iDictionary__.addEntry('mdet', 'entry1/instrument/crystal/mdet')
+    ds.__iDictionary__.addEntry('pmom', 'entry1/instrument/crystal/pmom')
+    ds.__iDictionary__.addEntry('pmchi', 'entry1/instrument/crystal/pmchi')
     ds.__iDictionary__.addEntry('ss1u', 'entry1/instrument/slits/ss1u')
     ds.__iDictionary__.addEntry('ss1d', 'entry1/instrument/slits/ss1d')
     ds.__iDictionary__.addEntry('ss1r', 'entry1/instrument/slits/ss1r')
     ds.__iDictionary__.addEntry('ss1l', 'entry1/instrument/slits/ss1l')
+    ds.__iDictionary__.addEntry('ss2u', 'entry1/instrument/slits/ss2u')
+    ds.__iDictionary__.addEntry('ss2d', 'entry1/instrument/slits/ss2d')
+    ds.__iDictionary__.addEntry('ss2r', 'entry1/instrument/slits/ss2r')
+    ds.__iDictionary__.addEntry('ss2l', 'entry1/instrument/slits/ss2l')
+    ds.__iDictionary__.addEntry('ss1hg', 'entry1/instrument/slits/gaps/ss1hg')
+    ds.__iDictionary__.addEntry('ss1ho', 'entry1/instrument/slits/gaps/ss1ho')
+    ds.__iDictionary__.addEntry('ss1vg', 'entry1/instrument/slits/gaps/ss1vg')
+    ds.__iDictionary__.addEntry('ss1vo', 'entry1/instrument/slits/gaps/ss1vo')
+    ds.__iDictionary__.addEntry('ss2hg', 'entry1/instrument/slits/gaps/ss2hg')
+    ds.__iDictionary__.addEntry('ss2ho', 'entry1/instrument/slits/gaps/ss2ho')
+    ds.__iDictionary__.addEntry('ss2vg', 'entry1/instrument/slits/gaps/ss2vg')
+    ds.__iDictionary__.addEntry('ss2vo', 'entry1/instrument/slits/gaps/ss2vo')
     
     scanVariable = str(scan_variable.value)
     scanVariable = scanVariable[:scanVariable.find(' ')]

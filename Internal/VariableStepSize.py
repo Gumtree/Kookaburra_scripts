@@ -16,7 +16,7 @@ reference_templates_dict['Si111'] = 179.622
 reference_templates_dict['Si311'] =  -0.02270
 
 steps_templates_dict = {}
-steps_templates_dict['Background Scan'] = [
+steps_templates_dict['Comprehensive Scan for Si111'] = [
     'time',
     [33, 6e-5, 50000],
     [13, 1.2e-4, 1000],
@@ -27,14 +27,14 @@ steps_templates_dict['Background Scan'] = [
     [60, 6.0e-3, 1000]]
 steps_templates_dict['Find Primary Beam for Si111'] = [
     'time',
-    [51, 0.00004, 2]]
+    [31, 0.00025, 1]]
 steps_templates_dict['Find Primary Beam for Si311'] = [
     'time',
-    [51, 0.00004, 2]]
+    [51, 0.00004, 1]]
 
-steps_templates_dict['Comprehensive Scan for Si111'] = [
+steps_templates_dict['TEST for Si111'] = [
     'count_roi',
-    [21, 1.3e-5, 50000],
+    [33, 1.3e-5, 50000],
     [13, 6.0e-5, 1000],
     [15, 1.2e-4, 1000],
     [10, 3.0e-4, 1000],
@@ -59,6 +59,15 @@ steps_templates_dict['Fast Scan'] = [
     [10, 1.2e-3, 1000],
     [16, 2.4e-3, 1000],
     [60, 6.0e-3, 1000]]
+steps_templates_dict['Si111 m2om scan'] = [
+    'time',
+    [31, 0.00025, 1]]
+    
+    
+steps_templates_dict['Si111 m2chi scan'] = [
+    'time',
+    [31, 0.1, 1]]
+
 
 ## export path
 
@@ -109,7 +118,11 @@ Group('Crystal').add(crystal_name, crystal_change)
     
 ## Scan
 
-scan_variable = Par('string', 'm2om [deg]', options = ['m1chi [deg]', 'm1om [deg]', 'm1x [mm]', 'm2chi [deg]', 'm2om [deg]', 'm2x [mm]'])
+scan_variable = Par('string', 'm2om [deg]', options = [
+    'pmom [deg]', 'pmchi [deg]', 'm1om [deg]', 'm1chi [deg]', 'm1x [mm]', 'm2om [deg]', 'm2chi [deg]', 'm2x [mm]', 'm2y [mm]', 'mdet [mm]',
+    'ss1u [mm]', 'ss1d [mm]', 'ss1l [mm]', 'ss1r [mm]',
+    'ss2u [mm]', 'ss2d [mm]', 'ss2l [mm]', 'ss2r [mm]'], command="scan_variable_plot.value = scan_variable.value")
+
 scan_variable.title = 'Variable'
 
 scan_reference = Par('float', '0.0')
@@ -191,9 +204,14 @@ check_tube10.title = '   Tube 10: Si (111)'
 g1 = Group('Plotting - Select Transmission Tube(s) of Interest:')
 g1.numColumns = 2
 g1.add(check_tube9, check_tube10)
-  
-scan_variable = Par('string', 'm2om [deg]', options = ['m1chi [deg]', 'm1om [deg]', 'm1x [mm]', 'm2chi [deg]', 'm2om [deg]', 'm2x [mm]'])
-scan_variable.title = 'Scan Variable'
+
+
+scan_variable_plot = Par('string', 'm2om [deg]', options = [
+    'pmom [deg]', 'pmchi [deg]', 'm1om [deg]', 'm1chi [deg]', 'm1x [mm]', 'm2om [deg]', 'm2chi [deg]', 'm2x [mm]', 'm2y [mm]', 'mdet [mm]',
+    'ss1u [mm]', 'ss1d [mm]', 'ss1l [mm]', 'ss1r [mm]',
+    'ss2u [mm]', 'ss2d [mm]', 'ss2l [mm]', 'ss2r [mm]'])
+
+scan_variable_plot.title = 'Scan Variable'
 
 combine_mode = Par('string', 'individual', options = ['individual', 'combined'])
 combine_mode.title = 'Mode'
@@ -204,7 +222,7 @@ scan_variable_sorting.title = 'Sorting'
 #check_fitting = Par('bool', False)
 #check_fitting.title = 'Fitting'
 
-Group('Plotting - Settings').add(scan_variable, combine_mode, scan_variable_sorting)
+Group('Plotting - Settings').add(scan_variable_plot, combine_mode, scan_variable_sorting)
 
 # export to csv
 btnPlot    = Act('btnPlot_clicked()', 'Plot selected Dataset')
@@ -398,9 +416,11 @@ def startScan():
         print 'histmem start'
         while True:
             sics.execute('histmem preset %i ' % preset)
-            sics.execute('histmem start')
-            
             time.sleep(5)
+            
+            sics.execute('histmem start')
+            time.sleep(5)
+            
             while not sicsController.getServerStatus().equals(ServerStatus.EAGER_TO_EXECUTE):
                 time.sleep(0.1)
     
@@ -434,7 +454,9 @@ def startScan():
         list_x.append(angle)
         list_y.append(total_counts)
         
-    sics.execute('newfile clear')
+    sics.execute('
+
+')
     
     # Get output filename
     filenameController = sicsController.findDeviceController('datafilename')
@@ -506,12 +528,18 @@ def btnPlot_clicked():
     ds.__iDictionary__.addEntry('m2x', 'entry1/instrument/crystal/m2x')
     ds.__iDictionary__.addEntry('m2y', 'entry1/instrument/crystal/m2y')
     ds.__iDictionary__.addEntry('mdet', 'entry1/instrument/crystal/mdet')
+    ds.__iDictionary__.addEntry('pmom', 'entry1/instrument/crystal/pmom')
+    ds.__iDictionary__.addEntry('pmchi', 'entry1/instrument/crystal/pmchi')
     ds.__iDictionary__.addEntry('ss1u', 'entry1/instrument/slits/ss1u')
     ds.__iDictionary__.addEntry('ss1d', 'entry1/instrument/slits/ss1d')
     ds.__iDictionary__.addEntry('ss1r', 'entry1/instrument/slits/ss1r')
     ds.__iDictionary__.addEntry('ss1l', 'entry1/instrument/slits/ss1l')
-    
-    scanVariable = str(scan_variable.value)
+    ds.__iDictionary__.addEntry('ss2u', 'entry1/instrument/slits/ss2u')
+    ds.__iDictionary__.addEntry('ss2d', 'entry1/instrument/slits/ss2d')
+    ds.__iDictionary__.addEntry('ss2r', 'entry1/instrument/slits/ss2r')
+    ds.__iDictionary__.addEntry('ss2l', 'entry1/instrument/slits/ss2l')
+        
+    scanVariable = str(scan_variable_plot.value)
     scanVariable = scanVariable[:scanVariable.find(' ')]
     scanVariable = ds[scanVariable]
     
@@ -598,7 +626,7 @@ def btnPlot_clicked():
     Plot1.title = Plot1.title + ' ' + basename
     
     if Plot1.ds is not None:
-        Plot1.x_label = str(scan_variable.value)
+        Plot1.x_label = str(scan_variable_plot.value)
         Plot1.y_label = 'counts per sec'
     
     # transmission
@@ -641,7 +669,7 @@ def btnPlot_clicked():
         Plot2.title   = 'Count Rate (individual) ' + basename
         
     if Plot2.ds is not None:
-        Plot2.x_label = str(scan_variable.value)
+        Plot2.x_label = str(scan_variable_plot.value)
         Plot2.y_label = 'counts per sec'
         
     return True
@@ -661,7 +689,7 @@ def export_clicked():
     if p1 or p2:
         f = open(__EXPORT_PATH__ + '/KKB%07d.csv' % df[path].id, 'w+')
         
-        variable     = str(scan_variable.value)
+        variable     = str(scan_variable_plot.value)
         variableName = variable[:variable.find(' ')]
         variableUnit = variable[(2+len(variableName)):-1]
         
