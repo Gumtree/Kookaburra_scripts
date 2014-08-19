@@ -52,13 +52,12 @@ steps_templates_dict['Comprehensive Scan for Si311'] = [
     [60, 3.0e-3, 1000]]
 steps_templates_dict['Fast Scan'] = [
     'count_roi',
-    [33, 6e-5, 50000],
-    [13, 1.2e-4, 1000],
-    [15, 2.4e-4, 1000],
-    [10, 6.0e-4, 1000],
-    [10, 1.2e-3, 1000],
-    [16, 2.4e-3, 1000],
-    [60, 6.0e-3, 1000]]
+    [17, 1.2e-4, 15000],
+    [6, 4.8e-4, 1000],
+    [6, 1.2e-3, 1000],
+    [5, 2.4e-3, 1000],
+    [8, 4.8e-3, 1000],
+    [30, 9e-3, 1000]]
 steps_templates_dict['Si111 m2om scan'] = [
     'time',
     [31, 0.00025, 1]]
@@ -454,9 +453,7 @@ def startScan():
         list_x.append(angle)
         list_y.append(total_counts)
         
-    sics.execute('
-
-')
+    sics.execute('newfile clear')
     
     # Get output filename
     filenameController = sicsController.findDeviceController('datafilename')
