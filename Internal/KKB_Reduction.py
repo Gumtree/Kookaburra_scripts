@@ -688,10 +688,14 @@ class ReductionDataset:
             fp.write("COR FILES: " + self.Filename.replace(';',',') + LE)
             fp.write("CREATED: " + datetime.now().strftime("%a, %d %b %Y at %H:%M:%S") + LE)
             fp.write("LABEL: " + self.Label + LE)
-            fp.write("EMP FILES: " + self.Emp.Filename.replace(';',',') + LE)
-            fp.write("Ds = %g cm ; Twide = %g ; Trock = %g" % (self.Thick, self.TransWide, self.TransRock) + LE)
-            fp.write("SAM PEAK ANGLE: %g ; EMP PEAK ANGLE: %g" % (self.PeakAng, self.Emp.PeakAng) + LE)
-            fp.write("EMP LEVEL: %g ; BKG LEVEL: %g" % (self.empLevel, self.Emp.bkgLevel) + LE)
+            try:
+                fp.write("EMP FILES: " + self.Emp.Filename.replace(';',',') + LE)
+                fp.write("Ds = %g cm ; Twide = %g ; Trock = %g" % (self.Thick, self.TransWide, self.TransRock) + LE)
+                fp.write("SAM PEAK ANGLE: %g ; EMP PEAK ANGLE: %g" % (self.PeakAng, self.Emp.PeakAng) + LE)
+                fp.write("EMP LEVEL: %g ; BKG LEVEL: %g" % (self.empLevel, self.Emp.bkgLevel) + LE)
+            except:
+                fp.write("SAM PEAK ANGLE: %g" % self.PeakAng + LE)
+                fp.write("EMP LEVEL: %g" % self.empLevel + LE)
 
             # divergence, in terms of Q (1/A) 
             gdqv = self.gDQv
@@ -725,7 +729,7 @@ def LoadBT5(path, files):
             
     return result
 
-def PlotReducedDataset(plot, ds, title):
+def PlotDataset(plot, ds, title):
     data = zeros(len(ds.Qvals))
     data[:]     = ds.DetCts
     data.var[:] = ds.ErrDetCts
@@ -802,6 +806,10 @@ def __run_script__(fns):
 
     # reduction
         
+    # get name of first sample file
+    filename = os.path.basename(dsFilePaths[0])
+    filename = filename[:filename.find('.nx.hdf')]
+    
     path = 'V:/shared/Hot Commissioning/Temp Plot Data Repository/'
     
     #ds = LoadBT5(path, ['CRc8a001.bt5', 'CRc8a002.bt5', 'CRc8a003.bt5', 'CRc8a004.bt5', 'CRc8a005.bt5', 'CRc8a006.bt5', 'CRc8a007.bt5'])
@@ -812,8 +820,10 @@ def __run_script__(fns):
     ds.SortAngles()
     ds.FindZeroAngle()
     ds.DetermineQVals()
-    ds.FindTWideCts()    
-    PlotReducedDataset(Plot1, ds, 'SAM')
+    ds.FindTWideCts()
+
+    ds.Save(path + filename + '-sam.txt')
+    PlotDataset(Plot1, ds, 'SAM')
     
     print 'empty: ', ', '.join(emFilePaths) 
     em = LoadNxHdf(emFilePaths)
@@ -821,34 +831,44 @@ def __run_script__(fns):
     em = RemoveIgnoredRanges(em, empIgnorePts.value)
     em.FindZeroAngle()
     em.DetermineQVals()
-    em.FindTWideCts()        
-    PlotReducedDataset(Plot1, em, 'EMP')
+    em.FindTWideCts()
     
+    em.Save(path + filename + '-emp.txt')
+    PlotDataset(Plot1, em, 'EMP')
+    
+    # correction
     ds.CorrectData(em)
     
-    # get name of first sample file
-    filename = os.path.basename(dsFilePaths[0])
-    filename = filename[:filename.find('.nx.hdf')]
-    
-    ds.Save('V:/shared/Hot Commissioning/Temp Plot Data Repository/' + filename + '.txt')
-
-    PlotReducedDataset(Plot1, ds, 'Cor')
+    ds.Save(path + filename + '-cor.txt')
+    PlotDataset(Plot1, ds, 'Cor')
         
+    Plot1.title   = 'Scattering'
+    Plot1.x_label = 'q (1/Angstrom)'
+    Plot1.y_label = 'intensity (counts/sec)'
+    
     Plot1.set_log_x_on(plotXLog.value)
     Plot1.set_log_y_on(plotYLog.value)
     
     Plot1.x_range = [plotXMin.value, plotXMax.value]
     Plot1.y_range = [plotYMin.value, plotYMax.value]
     
-    
+    # plot 2
     Plot2.clear()
     PlotTransmitionDataset(Plot2, ds, 'SAM')
     PlotTransmitionDataset(Plot2, em, 'EMP')
     
+    Plot2.title   = 'Transmission'
+    Plot2.x_label = 'q (1/Angstrom)'
+    Plot2.y_label = 'intensity (counts/sec)'
+        
+    # plot 3
     Plot3.clear()
     PlotMonitorDataset(Plot3, ds, 'SAM')
     PlotMonitorDataset(Plot3, em, 'EMP')
 
+    Plot3.title   = 'Monitor Counts'
+    Plot3.x_label = 'q (1/Angstrom)'
+    Plot3.y_label = 'intensity (counts/sec)'
 
 def __dispose__():
     global Plot1
