@@ -7,7 +7,7 @@ from gumpy.nexus.fitting import Fitting, GAUSSIAN_FITTING
 import math
 
 
-__FOLDER_PATH__ = 'V:/shared/Hot Commissioning/Temp Plot Data Repository'
+__FOLDER_PATH__ = 'V:/shared/KKB Logbook/Temp Plot Data Repository'
 
 if not os.path.exists(__FOLDER_PATH__):
     os.makedirs(__FOLDER_PATH__)
