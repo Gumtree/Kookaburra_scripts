@@ -4,6 +4,7 @@ __script__.version = '1.0'
 
 from gumpy.commons import sics
 from org.gumtree.gumnix.sics.control import ServerStatus
+from pickle import Pickler, Unpickler
 import time
 
 from __builtin__ import max as builtin_max
@@ -17,56 +18,54 @@ reference_templates_dict['Si311'] =  -0.02270
 
 steps_templates_dict = {}
 steps_templates_dict['Comprehensive Scan for Si111'] = [
-    'time',
-    [33, 6e-5, 50000],
-    [13, 1.2e-4, 1000],
-    [15, 2.4e-4, 1000],
-    [10, 6.0e-4, 1000],
-    [10, 1.2e-3, 1000],
-    [16, 2.4e-3, 1000],
-    [60, 6.0e-3, 1000]]
+    'count_roi',
+    [33, 6.0e-5, 50000, 1200],
+    [13, 1.2e-4,  1000, 1200],
+    [15, 2.4e-4,  1000, 1200],
+    [10, 6.0e-4,  1000, 1200],
+    [10, 1.2e-3,  1000, 1200],
+    [16, 2.4e-3,  1000, 1200],
+    [60, 6.0e-3,  1000, 1200]]
 steps_templates_dict['Find Primary Beam for Si111'] = [
     'time',
-    [31, 0.00025, 1]]
+    [31, 0.00025, 1, 1200]]
 steps_templates_dict['Find Primary Beam for Si311'] = [
     'time',
-    [51, 0.00004, 1]]
+    [51, 0.00004, 1, 1200]]
 
 steps_templates_dict['TEST for Si111'] = [
     'count_roi',
-    [33, 1.3e-5, 50000],
-    [13, 6.0e-5, 1000],
-    [15, 1.2e-4, 1000],
-    [10, 3.0e-4, 1000],
-    [10, 6.0e-4, 1000],
-    [16, 1.2e-3, 1000],
-    [60, 3.0e-3, 1000]]
+    [33, 1.3e-5, 50000, 1200],
+    [13, 6.0e-5,  1000, 1200],
+    [15, 1.2e-4,  1000, 1200],
+    [10, 3.0e-4,  1000, 1200],
+    [10, 6.0e-4,  1000, 1200],
+    [16, 1.2e-3,  1000, 1200],
+    [60, 3.0e-3,  1000, 1200]]
 steps_templates_dict['Comprehensive Scan for Si311'] = [
     'count_roi',
-    [21, 1.3e-5, 50000],
-    [13, 6.0e-5, 1000],
-    [15, 1.2e-4, 1000],
-    [10, 3.0e-4, 1000],
-    [10, 6.0e-4, 1000],
-    [16, 1.2e-3, 1000],
-    [60, 3.0e-3, 1000]]
+    [21, 1.3e-5, 50000, 1200],
+    [13, 6.0e-5,  1000, 1200],
+    [15, 1.2e-4,  1000, 1200],
+    [10, 3.0e-4,  1000, 1200],
+    [10, 6.0e-4,  1000, 1200],
+    [16, 1.2e-3,  1000, 1200],
+    [60, 3.0e-3,  1000, 1200]]
 steps_templates_dict['Fast Scan'] = [
     'count_roi',
-    [33, 6e-5, 50000],
-    [13, 1.2e-4, 1000],
-    [15, 2.4e-4, 1000],
-    [10, 6.0e-4, 1000],
-    [10, 1.2e-3, 1000],
-    [16, 2.4e-3, 1000],
-    [60, 6.0e-3, 1000]]
+    [17, 1.2e-4, 15000, 1200],
+    [ 6, 4.8e-4,  1000, 1200],
+    [ 6, 1.2e-3,  1000, 1200],
+    [ 5, 2.4e-3,  1000, 1200],
+    [ 8, 4.8e-3,  1000, 1200],
+    [30, 9.0e-3,  1000, 1200]]
 steps_templates_dict['Si111 m2om scan'] = [
     'time',
-    [31, 0.00025, 1]]
-    
-    
+    [31, 0.00025, 1, 1200]]
+
 steps_templates_dict['Si111 m2chi scan'] = [
     'time',
-    [31, 0.1, 1]]
+    [31, 0.1, 1, 1200]]
 
 
 ## export path
@@ -84,10 +83,11 @@ user_name.title = 'Name'
 user_email = Par('string', 'cre@ansto.gov.au', options = ['cre@ansto.gov.au', 'liliana.decampo@ansto.gov.au'])
 user_email.title = 'EMail'
 
-Group('User').add(user_name, user_email)
+g0 = Group('User')
+g0.numColumns = 2
+g0.add(user_name, user_email)
 
-## sample
-
+## Sample
 sample_name = Par('string', 'UNKNOWN', options = ['Empty Cell', 'Empty Beam'], command="sample_thickness.enabled = sample_name.value not in ['Empty Cell', 'Empty Beam']")
 sample_name.title = 'Name'
 
@@ -115,7 +115,49 @@ except:
 crystal_change = Act('switchCrystal()', 'switch to other crystal')
     
 Group('Crystal').add(crystal_name, crystal_change)
-    
+
+## Pre-Sample Slit
+
+ss1u = sics.getValue('/instrument/slits/ss1u').getFloatData()
+ss1d = sics.getValue('/instrument/slits/ss1d').getFloatData()
+ss1l = sics.getValue('/instrument/slits/ss1l').getFloatData()
+ss1r = sics.getValue('/instrument/slits/ss1r').getFloatData()
+
+ss1u0 = -8.04
+ss1d0 = -7.30
+
+ss1vg = (ss1u - ss1u0 - (ss1d - ss1d0)) / 1.0
+ss1vo = (ss1u - ss1u0 + (ss1d - ss1d0)) / 2.0
+
+ss1r0 = 28.35
+ss1l0 = 27.75
+
+ss1hg = (ss1r - ss1r0 - (ss1l - ss1l0)) / 1.0
+ss1ho = (ss1r - ss1r0 + (ss1l - ss1l0)) / 2.0
+
+pss_ss1vg = Par('string', '%.3f' % ss1vg, options = ['fully closed', '5', '10', '15', '20', '25', '30', '40', '50', 'fully opened'])
+pss_ss1vg.title = 'vertical gap (mm)'
+
+pss_ss1vo = Par('float', '%.3f' % ss1vo)
+pss_ss1vo.title = 'vertical offset (mm)'
+
+pss_ss1hg = Par('float', '%.3f' % ss1hg, options = ['fully closed', '5', '10', '15', '20', '25', '30', '40', '50', 'fully opened'])
+pss_ss1hg.title = 'horizontal gap (mm)'
+
+pss_ss1ho = Par('float', '%.3f' % ss1ho)
+pss_ss1ho.title = 'horizontal offset (mm)'
+
+g0 = Group('Pre-Sample Slit')
+g0.numColumns = 2
+g0.add(pss_ss1vg, pss_ss1vo, pss_ss1hg, pss_ss1ho)
+
+## Template
+
+steps_templates = Par('string', '', options = sorted(steps_templates_dict.keys()), command='setTemplate()')
+steps_templates.title = 'Template'
+
+Group('Template').add(steps_templates)
+
 ## Scan
 
 scan_variable = Par('string', 'm2om [deg]', options = [
@@ -131,12 +173,12 @@ scan_reference.title = 'Reference'
 for key in reference_templates_dict.keys():
     if key in crystal_name.value:
         scan_reference.value = reference_templates_dict[key]
-    
-steps_templates = Par('string', '', options = sorted(steps_templates_dict.keys()), command='SetTemplate()')
-steps_templates.title = 'Template'
 
-scan_mode = Par('string', 'count_roi', options = ['count_roi', 'time'])
+scan_mode = Par('string', 'count_roi', options = ['count_roi', 'time'], command='setScanMode()')
 scan_mode.title = 'Mode'
+
+scan_min_time = Par('int', '20')
+scan_min_time.title = 'Min Time (sec)'
 
 crystal = str(crystal_name.value)
 crystal = crystal[:crystal.find(' ')]
@@ -145,14 +187,20 @@ for key in steps_templates_dict.keys():
         steps_templates.value = key
         break
 
+scan_sam_position = Par('string', 'fixed', options = ['fixed', '1', '2', '3', '4', '5'])
+scan_sam_position.title = 'Sample Position'
+
 start_scan = Act('startScan()', 'start scan')
 
-Group('Scan').add(scan_variable, scan_reference, steps_templates, scan_mode, start_scan)
+g0 = Group('Scan')
+g0.numColumns = 2
+g0.add(scan_variable, scan_reference, scan_mode, scan_min_time, scan_sam_position, start_scan)
+
 
 ## Measurement Steps
 
 g0 = Group('Measurement Steps')
-g0.numColumns = 4
+g0.numColumns = 5
 
 stepInfo = []
 
@@ -165,12 +213,72 @@ for i in xrange(7):
     steps_s.title = 'Step Size'
     steps_p = Par('int', 0)
     steps_p.title = 'Preset'
+    steps_t = Par('int', 1200)
+    steps_t.title = 'Max Time'
     
-    stepInfo.append({'enabled': steps_e, 'dataPoints':steps_m, 'stepSize':steps_s, 'preset':steps_p})
-    g0.add(steps_e, steps_m, steps_s, steps_p)
+    stepInfo.append({'enabled': steps_e, 'dataPoints':steps_m, 'stepSize':steps_s, 'preset':steps_p, 'maxTime':steps_t})
+    g0.add(steps_e, steps_m, steps_s, steps_p, steps_t)
     
 btnPlotSteps = Act('btnPlotSteps_clicked()', 'Plot Measurement Steps') #'compare measurement steps with previous scan')
 
+## Save/Load Configuration
+
+cnfg_save = Par('file', command='saveConfiguration()')
+cnfg_save.title = 'Save'
+cnfg_save.dtype = 'save'
+cnfg_save.ext = '*.kkb'
+
+cnfg_load = Par('file', command='loadConfigurations()')
+cnfg_load.title = 'Load'
+cnfg_load.dtype = 'multi'
+cnfg_load.ext = '*.kkb'
+
+g0 = Group('Configuration')
+g0.add(cnfg_save, cnfg_load)
+
+configurations = []
+for i in xrange(5):
+    config = Par('string')
+    config.title = '(%i)' % (i + 1)
+    config.enabled = False
+    configurations.append(config)
+    g0.add(config)
+
+btnRunConfigurations = Act('runConfigurations()', 'Run Configurations')
+g0.add(btnRunConfigurations)
+
+def saveConfiguration():
+    print cnfg_save.value
+    
+    fh = open(cnfg_save.value, 'w')
+    p = Pickler(fh)
+    p.dump('KKB')
+    p.dump(True)
+    fh.close()
+    
+def loadConfigurations():
+    print cnfg_load.value
+    
+    for item in configurations:
+        item.value = ''
+    
+    if cnfg_load.value:
+        index = 0
+        for path in filter(None, cnfg_load.value.split(';')):
+            fh = open(path, 'r')
+            p = Unpickler(fh)
+            kkb = p.load()
+            print kkb
+            true = p.load()
+            print true
+            
+            if index < len(configurations):
+                configurations[index].value = os.path.basename(path)
+                index += 1
+
+def runConfigurations():
+    pass
+    
 ## Plot
 
 combine_tube0 = Par('bool', True)
@@ -228,11 +336,12 @@ Group('Plotting - Settings').add(scan_variable_plot, combine_mode, scan_variable
 btnPlot    = Act('btnPlot_clicked()', 'Plot selected Dataset')
 btnExport  = Act('export_clicked()', 'Export to CSV')
 
-def SetTemplate():
+def setTemplate():
     try:
         template = steps_templates_dict[steps_templates.value]
         
         scan_mode.value = template[0]
+        setScanMode()
         
         for i in xrange(len(template) - 1):
             templateItem = template[i + 1]
@@ -245,6 +354,8 @@ def SetTemplate():
             stepInfoItem['stepSize'  ].value   = templateItem[1]
             stepInfoItem['preset'    ].enabled = True
             stepInfoItem['preset'    ].value   = templateItem[2]
+            stepInfoItem['maxTime'   ].enabled = scan_min_time.enabled
+            stepInfoItem['maxTime'   ].value   = templateItem[3]
             
         for i in xrange(len(template) - 1, len(stepInfo)):
             stepInfoItem = stepInfo[i]
@@ -253,11 +364,20 @@ def SetTemplate():
             stepInfoItem['dataPoints'].enabled = False
             stepInfoItem['stepSize'  ].enabled = False
             stepInfoItem['preset'    ].enabled = False
+            stepInfoItem['maxTime'   ].enabled = False
             
     except:
         pass
     
-SetTemplate()
+def setScanMode():
+    if scan_mode.value == 'time':
+        scan_min_time.enabled = False
+        for stepInfoItem in stepInfo:
+            stepInfoItem['maxTime'].enabled = False
+    else:
+        scan_min_time.enabled = True
+        for stepInfoItem in stepInfo:
+            stepInfoItem['maxTime'].enabled = stepInfoItem['preset'].enabled
 
 def setEnabled(index):
     stepItem = stepInfo[index]
@@ -265,11 +385,14 @@ def setEnabled(index):
     stepItem['dataPoints'].enabled = value
     stepItem['stepSize'  ].enabled = value
     stepItem['preset'    ].enabled = value
+    stepItem['maxTime'   ].enabled = value and scan_min_time.enabled
+    
+setTemplate()
 
 
 def getScan():
     
-    scan = { 'angles': [], 'presets': [], 'groups': [] }
+    scan = { 'angles': [], 'presets': [], 'maxTimes': [], 'groups': [] }
     
     first = True
     angle = scan_reference.value
@@ -278,26 +401,24 @@ def getScan():
             dataPoints = stepInfoItem['dataPoints'].value
             stepSize   = stepInfoItem['stepSize'  ].value
             preset     = stepInfoItem['preset'    ].value
+            maxTime    = stepInfoItem['maxTime'   ].value
             
             if first:
                 angle -= ((dataPoints-1)/2.0) * stepSize;
-                scan['angles' ].append(angle)
-                scan['presets'].append(preset)
                 
-            elif len(scan['angles']) == 0:
-                scan['angles' ].append(angle)
-                scan['presets'].append(preset)
-                
-            else:
+            elif len(scan['angles']) != 0:
                 angle += stepSize
-                scan['angles' ].append(angle)
-                scan['presets'].append(preset)
+                
+            scan['angles'  ].append(angle)
+            scan['presets' ].append(preset)
+            scan['maxTimes'].append(maxTime)
             
             scan['groups'].append(angle)
             for i in xrange(1, dataPoints):
                 angle += stepSize
-                scan['angles' ].append(angle)
-                scan['presets'].append(preset)
+                scan['angles'  ].append(angle)
+                scan['presets' ].append(preset)
+                scan['maxTimes'].append(maxTime)
 
         first = False
         
@@ -327,12 +448,12 @@ def startScan():
 
     empLevel = 0.76
     bkgLevel = 0.98757
-    dOmega = 4.6E-6
+    dOmega = 2.3E-6
     gDQv = 0.0586
     #gDQh = 0
     
-    MainDeadTime = 2.78E-6
-    TransDeadTime = 3.15E-5
+    MainDeadTime = 1.4E-6
+    TransDeadTime = 1.4E-6
     
     ''' angles '''
     
@@ -389,79 +510,166 @@ def startScan():
         sics.execute('hset instrument/crystal/wavelength 0')
         sics.execute('hset instrument/detector/TransmissionTube -1')
         return
+    
+    # vertical slit
+    ss1vg = pss_ss1vg.value
+    ss1vo = pss_ss1vo.value
+    
+    if ss1vg == 'fully opened':
+        ss1u =  35.8
+        ss1d = -38.8
+    else:
+        if ss1vg == 'fully closed':
+            ss1vg = -5.0
+            ss1vo =  0.0
+            
+        ss1u = ss1u0 + 0.5 * float(ss1vg) + float(ss1vo)
+        ss1d = ss1d0 - 0.5 * float(ss1vg) + float(ss1vo)
+        
+    # horizontal
+    ss1hg = pss_ss1hg.value
+    ss1ho = pss_ss1ho.value
+        
+    if ss1hg == 'fully opened':
+        ss1r =  57.0
+        ss1l = -58.0
+    else:
+        if ss1hg == 'fully closed':
+            ss1hg = -5.0
+            ss1ho =  0.0
+            
+        ss1r = ss1r0 + 0.5 * float(ss1hg) + float(ss1ho)
+        ss1l = ss1l0 - 0.5 * float(ss1hg) + float(ss1ho)
 
-    sics.execute('histmem stop')
-    time.sleep(3)
-    sics.execute('histmem mode %s' % mode)
-    sics.execute('newfile HISTOGRAM_XYT')
-    time.sleep(1)
+    # apply slits
+    sics.execute('run ss1u %.2f' % ss1u)
+    sics.execute('run ss1d %.2f' % ss1d)
+    sics.execute('run ss1r %.2f' % ss1r)
+    sics.execute('run ss1l %.2f' % ss1l)
     
-    sicsController = sics.getSicsController()
+    # load sample positions
+    sam_positions = str(scan_sam_position.value)
     
-    list_x = []
-    list_y = []
-    for frame_index in xrange(len(scan['angles'])):
-        angle  = scan['angles' ][frame_index]
-        preset = scan['presets'][frame_index]
+    if (len(sam_positions) == 0) or (sam_positions == 'fixed'):
+        samz_list = [0.0]
+    else:
+        samz_list = []
         
-        print 'run %s %.5f' % (scanVariable, angle)
-        sics.execute('run %s %f' % (scanVariable, angle))
-        #sics.drive(scanVariable, angle)
-        time.sleep(10)
-        while not sicsController.getServerStatus().equals(ServerStatus.EAGER_TO_EXECUTE):
-            time.sleep(0.1)
-        print 'run done'
-        
+        pos2samz = {}
+        pos2samz[1] =  33.5
+        pos2samz[2] = 178.5
+        pos2samz[3] = 323.5
+        pos2samz[4] = 468.5
+        pos2samz[5] = 613.5
+
+        for range in filter(None, sam_positions.split(',')):
+            rangeItems = range.split('-')
+            if ('' in rangeItems) or (len(rangeItems) < 1) or (len(rangeItems) > 2):
+                raise Exception('format in "Sample Position" is incorrect')
+            
+            if len(rangeItems) == 1:
+                samz_list.append(pos2samz[int(rangeItems[0])])
+            else:
+                for i in xrange(int(rangeItems[0]), int(rangeItems[1])+1):
+                    samz_list.append(pos2samz[i])
+
+        if len(samz_list) == 0:
+            samz_list = [0.0]
+
+    for samz in samz_list:
+    
+        sics.execute('histmem stop')
+        time.sleep(3)
+        sics.execute('histmem mode time')
+    
+        if samz != 0.0:
+            print 'run samz %f' % samz
+            sics.execute('run samz %f' % samz)
+            
+            sics.execute('prun samz 2' % samz)
+            time.sleep(1)
+
+        sics.execute('newfile HISTOGRAM_XYT')
         time.sleep(1)
-        print 'histmem start'
-        while True:
-            sics.execute('histmem preset %i ' % preset)
-            time.sleep(5)
+        
+        sicsController = sics.getSicsController()
+        
+        for frame_index in xrange(len(scan['angles'])):
+            angle   = scan['angles'  ][frame_index]
+            preset  = scan['presets' ][frame_index]
+            maxTime = scan['maxTimes'][frame_index]
             
-            sics.execute('histmem start')
-            time.sleep(5)
-            
+            print 'run %s %.5f' % (scanVariable, angle)
+            sics.execute('run %s %f' % (scanVariable, angle))
+            #sics.drive(scanVariable, angle)
+            time.sleep(10)
             while not sicsController.getServerStatus().equals(ServerStatus.EAGER_TO_EXECUTE):
                 time.sleep(0.1)
-    
-            if mode == 'count_roi':
-                break
-            else:
-                valid = False
-                for i in xrange(10):
-                    time.sleep(1)
-                    detector_time = sics.getValue('/instrument/detector/time').getFloatData()
+            print 'run done'
+            
+            time.sleep(1)
+            print 'histmem start'
+            while True:
+                if mode == 'count_roi':
+                    sics.execute('histmem preset %i' % maxTime)
+                else:
+                    sics.execute('histmem preset %i' % preset)
                     
-                    valid = (detector_time >= preset - 1) or (detector_time >= preset * 0.90)
+                time.sleep(5)
+                
+                sics.execute('histmem start')
+                time.sleep(5)
+                
+                if mode == 'count_roi':
+                    print 'count_roi'
+                    
+                    time.sleep(scan_min_time.value)
+                    
+                    while not sicsController.getServerStatus().equals(ServerStatus.EAGER_TO_EXECUTE):
+                        count_roi = int(sicsext.runCommand('hmm configure num_events_filled_to_count_roi'))
+                        print count_roi
+                        
+                        if count_roi > preset:
+                            print 'reached desired count_roi'
+                            sics.execute('histmem pause')
+                            time.sleep(1)
+                            break
+                        
+                        time.sleep(0.1)
+                        
+                    break
+                
+                else:
+                    while not sicsController.getServerStatus().equals(ServerStatus.EAGER_TO_EXECUTE):
+                        time.sleep(0.1)
+        
+                    valid = False
+                    for i in xrange(10):
+                        time.sleep(1)
+                        detector_time = sics.getValue('/instrument/detector/time').getFloatData()
+                        
+                        valid = (detector_time >= preset - 1) or (detector_time >= preset * 0.90)
+                        if valid:
+                            break
+                        
+                    print 'detector_time:', detector_time
+                    
                     if valid:
                         break
-                    
-                print 'detector_time:', detector_time
+                    else:
+                        print 'scan was invalid and needs to be repeated'
                 
-                if valid:
-                    break
-                else:
-                    print 'scan was invalid and needs to be repeated'
+            #sics.execute('histmem stop')
+            sics.execute('save %i' % frame_index)
+            frame_index += 1
+            print 'histmem done'
             
-        #sics.execute('histmem stop')
-        sics.execute('save %i' % frame_index)
-        frame_index += 1
-        print 'histmem done'
-                
-        total_counts = sics.getValue('/instrument/detector/total_counts').getFloatData()
-        print 'total_counts:', total_counts
+        sics.execute('newfile clear')
         
-        list_x.append(angle)
-        list_y.append(total_counts)
-        
-    sics.execute('
-
-')
-    
-    # Get output filename
-    filenameController = sicsController.findDeviceController('datafilename')
-    savedFilename = filenameController.getValue().getStringData()
-    print 'saved:', savedFilename
+        # Get output filename
+        filenameController = sicsController.findDeviceController('datafilename')
+        savedFilename = filenameController.getValue().getStringData()
+        print 'saved:', savedFilename
     
     print 'done'
     print
