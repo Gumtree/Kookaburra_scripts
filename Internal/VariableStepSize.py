@@ -13,23 +13,58 @@ from __builtin__ import min as builtin_min
 ## templates
 
 reference_templates_dict = {}
-reference_templates_dict['Si111'] = 179.622
+reference_templates_dict['Si111'] = 179.614
 reference_templates_dict['Si311'] =  -0.02270
 
 steps_templates_dict = {}
-steps_templates_dict['Comprehensive Scan for Si111'] = [
+steps_templates_dict['Si111: Comprehensive Scan'] = [
     'count_roi',
-    [33, 6.0e-5, 50000, 1200],
+    [33, 6.0e-5, 10000, 1200],
     [13, 1.2e-4,  1000, 1200],
     [15, 2.4e-4,  1000, 1200],
     [10, 6.0e-4,  1000, 1200],
     [10, 1.2e-3,  1000, 1200],
     [16, 2.4e-3,  1000, 1200],
     [60, 6.0e-3,  1000, 1200]]
-steps_templates_dict['Find Primary Beam for Si111'] = [
+
+steps_templates_dict['Si111: CHECK INTESITY MAIN TRANS BACKGROUND'] = [
+    'count_roi',
+    [33, 6.0e-5,  1000, 1200],
+    [13, 1.2e-4,  1000, 1200],
+    [8, 2.4e-4,  1000, 1200],
+    [3, 0.1,  1000, 1200]]
+
+steps_templates_dict['Si111: Find Primary Beam'] = [
     'time',
     [31, 0.00025, 1, 1200]]
-steps_templates_dict['Find Primary Beam for Si311'] = [
+
+steps_templates_dict['Si111: Check Tsas'] = [
+
+    'time',
+    [17, 1.2e-4, 1, 1200],
+    [2, 0.1,  20, 1200]]
+
+steps_templates_dict['Si111: Fast Scan'] = [
+    'count_roi',
+    [17, 1.2e-4, 10000, 1200],
+    [ 6, 4.8e-4,  1000, 1200],
+    [ 6, 1.2e-3,  1000, 1200],
+    [ 5, 2.4e-3,  1000, 1200],
+    [ 8, 4.8e-3,  1000, 1200],
+    [30, 9.0e-3,  1000, 1200]]
+
+steps_templates_dict['Si111: Quick Overview Scan 10 seconds'] = [
+    'time',
+    [17, 1.2e-4,   1, 1200],
+    [ 6, 4.8e-4,  10, 1200],
+    [ 6, 1.2e-3,  10, 1200],
+    [ 5, 2.4e-3,  10, 1200],
+    [ 8, 4.8e-3,  10, 1200],
+    [30, 9.0e-3,  10, 1200]]
+
+
+
+steps_templates_dict['Si311: Find Primary Beam'] = [
     'time',
     [51, 0.00004, 1, 1200]]
 
@@ -42,7 +77,7 @@ steps_templates_dict['TEST for Si111'] = [
     [10, 6.0e-4,  1000, 1200],
     [16, 1.2e-3,  1000, 1200],
     [60, 3.0e-3,  1000, 1200]]
-steps_templates_dict['Comprehensive Scan for Si311'] = [
+steps_templates_dict['Si311: Comprehensive Scan'] = [
     'count_roi',
     [21, 1.3e-5, 50000, 1200],
     [13, 6.0e-5,  1000, 1200],
@@ -51,19 +86,9 @@ steps_templates_dict['Comprehensive Scan for Si311'] = [
     [10, 6.0e-4,  1000, 1200],
     [16, 1.2e-3,  1000, 1200],
     [60, 3.0e-3,  1000, 1200]]
-steps_templates_dict['Fast Scan'] = [
-    'count_roi',
-    [17, 1.2e-4, 15000, 1200],
-    [ 6, 4.8e-4,  1000, 1200],
-    [ 6, 1.2e-3,  1000, 1200],
-    [ 5, 2.4e-3,  1000, 1200],
-    [ 8, 4.8e-3,  1000, 1200],
-    [30, 9.0e-3,  1000, 1200]]
-steps_templates_dict['Si111 m2om scan'] = [
-    'time',
-    [31, 0.00025, 1, 1200]]
 
-steps_templates_dict['Si111 m2chi scan'] = [
+
+steps_templates_dict['Test m2chi scan'] = [
     'time',
     [31, 0.1, 1, 1200]]
 
@@ -190,7 +215,7 @@ for key in steps_templates_dict.keys():
 scan_sam_position = Par('string', 'fixed', options = ['fixed', '1', '2', '3', '4', '5'])
 scan_sam_position.title = 'Sample Position'
 
-start_scan = Act('startScan()', 'start scan')
+start_scan = Act('startScan(ConfigurationModel())', 'start scan')
 
 g0 = Group('Scan')
 g0.numColumns = 2
@@ -247,18 +272,24 @@ for i in xrange(5):
 btnRunConfigurations = Act('runConfigurations()', 'Run Configurations')
 g0.add(btnRunConfigurations)
 
-def saveConfiguration():
-    print cnfg_save.value
-    
+def saveConfiguration():    
     fh = open(cnfg_save.value, 'w')
-    p = Pickler(fh)
-    p.dump('KKB')
-    p.dump(True)
-    fh.close()
+    try:
+        p = Pickler(fh)
+        
+        # header
+        p.dump('KKB')
+        # content
+        model = ConfigurationModel()
+        for att in dir(model):
+            p.dump(getattr(model, att))
+        
+        print 'saved'
+        
+    finally:
+        fh.close()
     
-def loadConfigurations():
-    print cnfg_load.value
-    
+def loadConfigurations():    
     for item in configurations:
         item.value = ''
     
@@ -266,19 +297,35 @@ def loadConfigurations():
         index = 0
         for path in filter(None, cnfg_load.value.split(';')):
             fh = open(path, 'r')
-            p = Unpickler(fh)
-            kkb = p.load()
-            print kkb
-            true = p.load()
-            print true
-            
-            if index < len(configurations):
-                configurations[index].value = os.path.basename(path)
-                index += 1
+            try:
+                p = Unpickler(fh)
+                if p.load() != 'KKB':
+                    print 'ERROR:', os.path.basename(path)
+                elif index < len(configurations):
+                    configurations[index].value = os.path.basename(path)
+                    index += 1
+            finally:
+                fh.close()
 
-def runConfigurations():
-    pass
-    
+def runConfigurations():    
+    if cnfg_load.value:
+        for path in filter(None, cnfg_load.value.split(';')):
+            fh = open(path, 'r')
+            try:
+                p = Unpickler(fh)
+                if p.load() != 'KKB':
+                    print 'ERROR:', os.path.basename(path)
+                else:
+                    print os.path.basename(path)
+                    model = ConfigurationModel()
+                    for att in dir(model):
+                        setattr(model, att, p.load())
+                        
+                    startScan(model)
+            finally:
+                fh.close()
+
+
 ## Plot
 
 combine_tube0 = Par('bool', True)
@@ -437,14 +484,13 @@ def switchCrystal():
         else:
             raise Exception('cannot access crystals')
 
-def startScan():
+def startScan(configModel):
     
     ''' setup '''
     
-    scanVariable = str(scan_variable.value)
-    scanVariable = scanVariable[:scanVariable.find(' ')]
-    crystal      = str(crystal_name.value)
-    mode         = str(scan_mode.value)
+    scanVariable = configModel.scanVariable
+    crystal      = configModel.crystal
+    mode         = configModel.mode
 
     empLevel = 0.76
     bkgLevel = 0.98757
@@ -452,18 +498,17 @@ def startScan():
     gDQv = 0.0586
     #gDQh = 0
     
-    MainDeadTime = 1.4E-6
-    TransDeadTime = 1.4E-6
+    MainDeadTime = 1.08E-6
+    TransDeadTime = 1.08E-6
     
     ''' angles '''
     
-    scan = getScan()
+    scan = configModel.scan
     
     scan_angleMin = builtin_min(scan['angles'])
     scan_angleMax = builtin_max(scan['angles'])
     
     if ('m1om' in scanVariable) or ('m2om' in scanVariable):
-        crystal   = str(crystal_name.value)
         tolerance = 2
         
         approved = False
@@ -481,21 +526,22 @@ def startScan():
         
     ''' execution '''
     
-    sics.execute('hset user/name '  + str(user_name.value))
-    sics.execute('hset user/email ' + str(user_email.value))
+    sics.execute('hset user/name '  + configModel.user_name)
+    sics.execute('hset user/email ' + configModel.user_email)
     
-    sics.execute('hset sample/name '        + str(sample_name.value))
-    sics.execute('hset sample/description ' + str(sample_description.value))
-    sics.execute('hset sample/thickness %f' % float(sample_thickness.value))
+    sics.execute('hset sample/name '        + configModel.sample_name)
+    sics.execute('hset sample/description ' + configModel.sample_description)
+    sics.execute('hset sample/thickness %g' % configModel.sample_thickness)
     
-    sics.execute('hset experiment/bkgLevel %f'  % bkgLevel)
-    sics.execute('hset experiment/empLevel %f'  % empLevel)
-    sics.execute('hset experiment/dOmega %f'    % dOmega)
-    sics.execute('hset experiment/gDQv %f'      % gDQv)
-    #sics.execute('hset experiment/gDQh %f'      % gDQh)
+    sics.execute('hset experiment/bkgLevel %g'  % bkgLevel)
+    sics.execute('hset experiment/empLevel %g'  % empLevel)
+    sics.execute('hset experiment/gDQv %g'      % gDQv)
+    #sics.execute('hset experiment/gDQh %g'      % gDQh)
     
-    sics.execute('hset instrument/detector/MainDeadTime %f'  % MainDeadTime)
-    sics.execute('hset instrument/detector/TransDeadTime %f' % TransDeadTime)
+    sics.execute('hset instrument/crystal/dOmega %g' % dOmega)
+    
+    sics.execute('hset instrument/detector/MainDeadTime %g'  % MainDeadTime)
+    sics.execute('hset instrument/detector/TransDeadTime %g' % TransDeadTime)
     
     if 'Si111' in crystal:
         sics.execute('hset instrument/crystal/wavelength 4.74')
@@ -512,8 +558,8 @@ def startScan():
         return
     
     # vertical slit
-    ss1vg = pss_ss1vg.value
-    ss1vo = pss_ss1vo.value
+    ss1vg = configModel.ss1vg
+    ss1vo = configModel.ss1vo
     
     if ss1vg == 'fully opened':
         ss1u =  35.8
@@ -527,8 +573,8 @@ def startScan():
         ss1d = ss1d0 - 0.5 * float(ss1vg) + float(ss1vo)
         
     # horizontal
-    ss1hg = pss_ss1hg.value
-    ss1ho = pss_ss1ho.value
+    ss1hg = configModel.ss1hg
+    ss1ho = configModel.ss1ho
         
     if ss1hg == 'fully opened':
         ss1r =  57.0
@@ -548,7 +594,7 @@ def startScan():
     sics.execute('run ss1l %.2f' % ss1l)
     
     # load sample positions
-    sam_positions = str(scan_sam_position.value)
+    sam_positions = str(configModel.sam_position)
     
     if (len(sam_positions) == 0) or (sam_positions == 'fixed'):
         samz_list = [0.0]
@@ -583,10 +629,9 @@ def startScan():
         sics.execute('histmem mode time')
     
         if samz != 0.0:
-            print 'run samz %f' % samz
-            sics.execute('run samz %f' % samz)
-            
-            sics.execute('prun samz 2' % samz)
+            print 'run samz %.2f' % samz
+            sics.execute('run samz %.2f' % samz)
+            # sics.execute('prun samz 2' % samz) !!!
             time.sleep(1)
 
         sics.execute('newfile HISTOGRAM_XYT')
@@ -594,13 +639,14 @@ def startScan():
         
         sicsController = sics.getSicsController()
         
+        print 'frames:', len(scan['angles'])
         for frame_index in xrange(len(scan['angles'])):
             angle   = scan['angles'  ][frame_index]
             preset  = scan['presets' ][frame_index]
             maxTime = scan['maxTimes'][frame_index]
             
-            print 'run %s %.5f' % (scanVariable, angle)
-            sics.execute('run %s %f' % (scanVariable, angle))
+            print 'run %s %.6f' % (scanVariable, angle)
+            sics.execute('run %s %.6f' % (scanVariable, angle))
             #sics.drive(scanVariable, angle)
             time.sleep(10)
             while not sicsController.getServerStatus().equals(ServerStatus.EAGER_TO_EXECUTE):
@@ -623,19 +669,23 @@ def startScan():
                 if mode == 'count_roi':
                     print 'count_roi'
                     
-                    time.sleep(scan_min_time.value)
+                    time.sleep(configModel.min_time)
                     
+                    count_roi = 0
                     while not sicsController.getServerStatus().equals(ServerStatus.EAGER_TO_EXECUTE):
-                        count_roi = int(sicsext.runCommand('hmm configure num_events_filled_to_count_roi'))
-                        print count_roi
-                        
-                        if count_roi > preset:
-                            print 'reached desired count_roi'
-                            sics.execute('histmem pause')
-                            time.sleep(1)
-                            break
-                        
-                        time.sleep(0.1)
+                        try:
+                            count_roi = int(sicsext.runCommand('hmm configure num_events_filled_to_count_roi'))
+                            # print count_roi
+                            
+                            if count_roi > preset:
+                                print 'reached desired count_roi'
+                                sics.execute('histmem pause')
+                                time.sleep(1)
+                                break
+                        except:
+                            pass
+                            
+                        time.sleep(0.5)
                         
                     break
                 
@@ -676,7 +726,7 @@ def startScan():
   
 def btnPlotSteps_clicked():
     scan = getScan()
-    print 'range [%f, %f]' % (scan['angles'][0], scan['angles'][-1])
+    print 'range [%g, %g]' % (scan['angles'][0], scan['angles'][-1])
     
     try:
         for mask in Plot1.masks:
@@ -961,3 +1011,32 @@ def __dispose__():
     Plot1.clear()
     Plot2.clear()
     Plot3.clear()
+
+
+## model
+
+class ConfigurationModel:
+    def __init__(self):
+        self.scanVariable = str(scan_variable.value)
+        self.scanVariable = self.scanVariable[:self.scanVariable.find(' ')]
+        self.crystal      = str(crystal_name.value)
+        self.mode         = str(scan_mode.value)
+        
+        self.scan = getScan()
+
+        self.user_name  = str(user_name.value)
+        self.user_email = str(user_email.value)
+        
+        self.sample_name        = str(sample_name.value)
+        self.sample_description = str(sample_description.value)
+        self.sample_thickness   = float(sample_thickness.value)
+        
+        # vertical/horizontal slit
+        self.ss1vg = float(pss_ss1vg.value)
+        self.ss1vo = float(pss_ss1vo.value)
+        self.ss1hg = float(pss_ss1hg.value)
+        self.ss1ho = float(pss_ss1ho.value)
+        
+        # load sample positions
+        self.sam_position = str(scan_sam_position.value)
+        self.min_time     = int(scan_min_time.value)

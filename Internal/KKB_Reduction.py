@@ -47,7 +47,7 @@ Thickness_FromFile = Par('float', 'NaN')
 Thickness_FromFile.title = ''
 Thickness_FromFile.enabled = False
 
-MainDeadTime = Par('float', '2.78e-6')
+MainDeadTime = Par('float', '1.08e-6')
 MainDeadTime.title = 'Main Dead Time (s)'
 MainDeadTime.enabled = False
 MainDeadTime_Patching = Par('bool', False, command='MainDeadTime.enabled = MainDeadTime_Patching.value')
@@ -56,7 +56,7 @@ MainDeadTime_FromFile = Par('float', 'NaN')
 MainDeadTime_FromFile.title = ''
 MainDeadTime_FromFile.enabled = False
 
-TransDeadTime = Par('float', '3.15e-5')
+TransDeadTime = Par('float', '1.08e-6')
 TransDeadTime.title = 'Trans Dead Time (s)'
 TransDeadTime.enabled = False
 TransDeadTime_Patching = Par('bool', False, command='TransDeadTime.enabled = TransDeadTime_Patching.value')
@@ -65,7 +65,7 @@ TransDeadTime_FromFile = Par('float', 'NaN')
 TransDeadTime_FromFile.title = ''
 TransDeadTime_FromFile.enabled = False
 
-bkgLevel = Par('float', '22800')
+bkgLevel = Par('float', '98')
 bkgLevel.title = 'normalized BKG Level'
 bkgLevel.enabled = False
 bkgLevel_Patching = Par('bool', False, command='bkgLevel.enabled = bkgLevel_Patching.value')
@@ -128,7 +128,7 @@ def parametersShow():
     else:
         print 'please select one file'
 
-defaultMCR = Par('float', '1.0e6')
+defaultMCR = Par('float', '5000')
 defaultMCR.title = 'Default MCR'
 
 TWideMarker = Par('float', '3e-3')
@@ -311,7 +311,7 @@ def bkgLevelGet():
 
 '''
 
-from math import sqrt, sin
+from math import sqrt, sin, exp
 from datetime import datetime
 from bisect import bisect_left
 
@@ -331,7 +331,19 @@ def DeadtimeCorrection(hmm, tid, deadTime, countTimes):
         tube = hmm[:, :, tid].sum(0)    # hmm_xy
         
     for i in xrange(len(tube)):
-        tube[i] = tube[i] / (1.0 - tube[i] * deadTime / countTimes[i])
+        
+        # x1 = x0 - (x0 - y*e^cx0) / (1 - cx0)
+        
+        dtt = deadTime / countTimes[i]
+        
+        y = tube[i]
+        x = y       # initial value
+        for j in xrange(4):
+            x = x - (x - y*exp(dtt * x)) / (1 - dtt * x)
+            
+        tube[i] = x
+
+        #tube[i] = tube[i] * (1 / (1.0 - tube[i] * deadTime / countTimes[i]))
     
     return tube
 
@@ -810,7 +822,7 @@ def __run_script__(fns):
     filename = os.path.basename(dsFilePaths[0])
     filename = filename[:filename.find('.nx.hdf')]
     
-    path = 'V:/shared/Hot Commissioning/Temp Plot Data Repository/'
+    path = 'V:/shared/KKB Logbook/Temp Plot Data Repository/'
     
     #ds = LoadBT5(path, ['CRc8a001.bt5', 'CRc8a002.bt5', 'CRc8a003.bt5', 'CRc8a004.bt5', 'CRc8a005.bt5', 'CRc8a006.bt5', 'CRc8a007.bt5'])
     #em = LoadBT5(path, ['CRemp001.bt5', 'CRemp002.bt5', 'CRemp003.bt5', 'CRemp004.bt5', 'CRemp005.bt5', 'CRemp006.bt5', 'CRemp007.bt5'] )
