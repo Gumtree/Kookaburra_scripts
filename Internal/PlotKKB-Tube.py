@@ -4,7 +4,7 @@ __script__.version = '1.0'
 
 from gumpy.nexus.fitting import Fitting, GAUSSIAN_FITTING
 
-import math
+from math import exp, fabs
 
 
 __FOLDER_PATH__ = 'V:/shared/KKB Logbook/Temp Plot Data Repository'
@@ -34,10 +34,10 @@ g0 = Group('Select Tube(s) of Interest:')
 g0.numColumns = 6
 g0.add(combine_tube0, combine_tube1, combine_tube2, combine_tube3, combine_tube4, combine_tube6)
 
-check_tube9 = Par('bool', True)
+check_tube9 = Par('bool', False)
 check_tube9.title = ' Tube 9: Si (311)'
 
-check_tube10 = Par('bool', False)
+check_tube10 = Par('bool', True)
 check_tube10.title = '   Tube 10: Si (111)'
         
 g1 = Group('Select Transmission Tube(s) of Interest:')
@@ -53,22 +53,59 @@ scan_variable = Par('string', 'm2om [deg]', options = [
 
 scan_variable.title = 'Scan Variable'
 
-combine_mode = Par('string', 'individual', options = ['individual', 'combined'])
-combine_mode.title = 'Mode'
+combine_mode = Par('string', 'combined', options = ['individual', 'combined'])
+combine_mode.title = 'Main Detector Tubes'
       
 scan_variable_sorting = Par('bool', True)
-scan_variable_sorting.title = 'Sorting'
+scan_variable_sorting.title = 'Sort Scan Variable'
 
-check_fitting = Par('bool', False)
-check_fitting.title = 'Fitting'
+run_fitting = Par('bool', False)
+run_fitting.title = 'Show Fitting Result'
 
-Group('Settings').add(scan_variable, combine_mode, scan_variable_sorting, check_fitting)
+Group('Settings').add(scan_variable, combine_mode, scan_variable_sorting, run_fitting)
 
 
 # export to csv
 export = Act('export_clicked()', 'Export to CSV')
 
+def GetTubeCounts(hmm, tid):
+    if hmm.ndim == 4:
+        return hmm[:, 0, :, tid].sum(0) # hmm
+    else:
+        return hmm[:, :, tid].sum(0)    # hmm_xy
+    
+def TimeNormalization(counts, time):
+    if counts.size == 1:
+        counts[0] = counts[0] * 1.0 / time
+    else:
+        counts[:] = counts[:] * 1.0 / time
+        
+def AnngleSorting(counts, sortInfo):
+    if counts.size > 1:
+        counts[:] = [counts[item[0]] for item in sortInfo]
+
+def DeadtimeCorrection(counts, deadTime, time):
+    for i in xrange(len(counts)):
+        
+        # x1 = x0 - (x0 - y*e^cx0) / (1 - cx0)
+        y = counts[i]
+        x = y       # initial value
+        
+        dtt = deadTime / time[i]
+        
+        for j in xrange(4):
+            x = x - (x - y*exp(dtt * x)) / (1 - dtt * x)
+            
+        counts[i] = x
+
+        #tube[i] = tube[i] * (1 / (1.0 - tube[i] * deadTime / countTimes[i]))
+
 def proc_fn(path):
+    
+    #global ds
+    #global dataF
+    
+    MainDeadTime = 1.08e-6
     
     basename = os.path.basename(str(path))
     basename = basename[:basename.find('.nx.hdf')]
@@ -140,17 +177,11 @@ def proc_fn(path):
     Plot1.clear()    
     if str(combine_mode.value) == 'individual':
         for tid in tids:
-            if ds.hmm.ndim == 4:
-                data[:] = ds.hmm[:, 0, :, tid].sum(0) # hmm
-            else:
-                data[:] = ds.hmm[:, :, tid].sum(0)  # hmm_xy
-            
-            if data.size == 1:
-                data[0] = data[0] * 1.0 / ds.time
-            else:
-                data[:] = data[:] * 1.0 / ds.time
-                if sorting:
-                    data[:] = [data[item[0]] for item in info] # sorting
+            data[:] = GetTubeCounts(ds.hmm, tid)
+                            
+            TimeNormalization(data, ds.time)
+            if sorting:
+                AnngleSorting(data, info)
                 
             data.var[:] = 0 # total_counts / (ds.time * ds.time)
 
@@ -162,21 +193,15 @@ def proc_fn(path):
             
             Plot1.add_dataset(dataF)
         
-        Plot1.title = 'Count Rate (individual)'
+        Plot1.title = 'Count Rate (individual) ' + basename
             
     else:
         for tid in tids:
-            if ds.hmm.ndim == 4:
-                data[:] += ds.hmm[:, 0, :, tid].sum(0) # hmm
-            else:
-                data[:] += ds.hmm[:, :, tid].sum(0)  # hmm_xy
+            data[:] += GetTubeCounts(ds.hmm, tid)
             
-        if data.size == 1:
-            data[0] = data[0] * 1.0 / ds.time
-        else:
-            data[:] = data[:] * 1.0 / ds.time
-            if sorting:
-                data[:] = [data[item[0]] for item in info] # sorting
+        TimeNormalization(data, ds.time)
+        if sorting:
+            AnngleSorting(data, info)
             
         data.var[:] = 0 # total_counts / (ds.time * ds.time)
         
@@ -186,14 +211,38 @@ def proc_fn(path):
         data.title ='Tubes ' + str(tids)
         
         Plot1.set_dataset(data)
-        Plot1.title   = 'Count Rate (combined)'
-
-    Plot1.title = Plot1.title + ' ' + basename
+        Plot1.title = 'Count Rate (combined) ' + basename
     
     if Plot1.ds is not None:
         Plot1.x_label = str(scan_variable.value)
         Plot1.y_label = 'counts per sec'
     
+    # dead-time corrected / fitted
+    Plot2.clear()
+    
+    data = zeros(n)
+    for tid in tids:
+        data[:] += GetTubeCounts(ds.hmm, tid)
+        
+    DeadtimeCorrection(data, MainDeadTime, ds.time)
+    TimeNormalization(data, ds.time)
+    if sorting:
+        AnngleSorting(data, info)
+        
+    data.var[:] = 0 # total_counts / (ds.time * ds.time)
+    
+    axis0    = data.axes[0]
+    axis0[:] = scanVariable[:]
+    
+    data.title ='Tubes ' + str(tids)
+    
+    Plot2.set_dataset(data)
+    Plot2.title = 'Deadtime corrected (combined) ' + basename
+    
+    if Plot2.ds is not None:
+        Plot2.x_label = str(scan_variable.value)
+        Plot2.y_label = 'counts per sec'
+
     # transmission
     data = zeros(n)
     
@@ -203,20 +252,14 @@ def proc_fn(path):
     if check_tube10.value:
         tids.append(10)
         
-    Plot2.clear()
+    Plot3.clear()
     for tid in tids:
-        if ds.hmm.ndim == 4:
-            data[:] = ds.hmm[:, 0, :, tid].sum(0) # hmm
-        else:
-            data[:] = ds.hmm[:, :, tid].sum(0)  # hmm_xy
-        
-        if data.size == 1:
-            data[0] = data[0] * 1.0 / ds.time
-        else:
-            data[:] = data[:] * 1.0 / ds.time
-            if sorting:
-                data[:] = [data[item[0]] for item in info] # sorting
+        data[:] = GetTubeCounts(ds.hmm, tid)
             
+        TimeNormalization(data, ds.time)
+        if sorting:
+            AnngleSorting(data, info)
+
         data.var[:] = 0 # total_counts / (ds.time * ds.time)
 
         axis0 = data.axes[0]
@@ -230,15 +273,16 @@ def proc_fn(path):
         else:
             dataF.title = 'Tube %i' % tid
         
-        Plot2.add_dataset(dataF)
-        Plot2.title   = 'Count Rate (individual) ' + basename
+        Plot3.add_dataset(dataF)
+        Plot3.title   = 'Count Rate (individual) ' + basename
         
-    if Plot2.ds is not None:
-        Plot2.x_label = str(scan_variable.value)
-        Plot2.y_label = 'counts per sec'
+    if Plot3.ds is not None:
+        Plot3.x_label = str(scan_variable.value)
+        Plot3.y_label = 'counts per sec'
         
     # fitting
-    if check_fitting.value and (Plot1.ds is not None) and (len(Plot1.ds) == 1):
+    '''
+    if run_fitting.value and (Plot1.ds is not None) and (len(Plot1.ds) == 1):
         ds0 = Plot1.ds[0]
         
         nan = float('nan')
@@ -253,7 +297,7 @@ def proc_fn(path):
         
         fitting = Fitting(GAUSSIAN_FITTING)
         fitting.set_param('mean', xMax)
-        fitting.set_param('sigma', math.fabs(0.0015 / 2.35482))
+        fitting.set_param('sigma', fabs(0.0015 / 2.35482))
         fitting.set_histogram(ds0, xMax - 0.1, xMax + 0.1)
         #fitting.set_histogram(ds0, xMax - 0.0015, xMax + 0.0015)
         
@@ -264,11 +308,13 @@ def proc_fn(path):
         fit.title  = 'Gauss (center: %.7f)' % fitting.params['mean']
         Plot1.add_dataset(fit)
         print 'center: %.7f' % fitting.params['mean']
+    '''
 
 def export_clicked():
     
     Plot1.clear()
     Plot2.clear()
+    Plot3.clear()
     
     basename = ''
     
@@ -283,8 +329,9 @@ def export_clicked():
 
     p1 = (Plot1.ds is not None) and (len(Plot1.ds) >= 1)
     p2 = (Plot2.ds is not None) and (len(Plot2.ds) >= 1)
+    p3 = (Plot3.ds is not None) and (len(Plot3.ds) >= 1)
 
-    if p1 or p2:
+    if p1 or p3:
         f = open(__FOLDER_PATH__ + '/KKB%07d.csv' % df[str(fns[0])].id, 'w+')
         
         variable     = str(scan_variable.value)
@@ -309,10 +356,20 @@ def export_clicked():
             if dsRef is None:
                 dsRef = Plot2.ds[0]
                 dsRefAngle = dsRef.axes[0]
-
+            
             for ds in Plot2.ds:
-                title = str(ds.title)
-                
+                if len(ds) == len(dsRef): # to ignore Gauss fit
+                    title = str(ds.title) # select "[0;1;2;3;4]"
+                    f.write(', %s_DeadtimeCorrected%s' % (basename, title[title.find('['):].replace(',', ';').replace(' ','')))
+                    columns += 1
+                    
+        if p3:
+            if dsRef is None:
+                dsRef = Plot3.ds[0]
+                dsRefAngle = dsRef.axes[0]
+
+            for ds in Plot3.ds:
+                title = str(ds.title) # select "Tube9" or "Tube10"
                 f.write(',  %s_%s' % (basename, title[:title.find(':')].replace(' ','')))
                 columns += 1
             
@@ -330,6 +387,10 @@ def export_clicked():
                         f.write(', %.5f' % ds[i])
             if p2:
                 for ds in Plot2.ds:
+                    if len(ds) == len(dsRef): # to ignore Gauss fit
+                        f.write(', %.5f' % ds[i])
+            if p3:
+                for ds in Plot3.ds:
                     f.write(', %.5f' % ds[i])
             f.write('\n')
 

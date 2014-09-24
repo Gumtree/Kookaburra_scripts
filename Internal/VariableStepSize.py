@@ -95,7 +95,7 @@ steps_templates_dict['Test m2chi scan'] = [
 
 ## export path
 
-__EXPORT_PATH__ = 'V:/shared/Hot Commissioning/Temp Plot Data Repository'
+__EXPORT_PATH__ = 'V:/shared/KKB Logbook/Temp Plot Data Repository/'
 
 if not os.path.exists(__EXPORT_PATH__):
     os.makedirs(__EXPORT_PATH__)
@@ -141,40 +141,67 @@ crystal_change = Act('switchCrystal()', 'switch to other crystal')
     
 Group('Crystal').add(crystal_name, crystal_change)
 
-## Pre-Sample Slit
+## Pre/Post-Sample Slit
 
-ss1u = sics.getValue('/instrument/slits/ss1u').getFloatData()
-ss1d = sics.getValue('/instrument/slits/ss1d').getFloatData()
-ss1l = sics.getValue('/instrument/slits/ss1l').getFloatData()
-ss1r = sics.getValue('/instrument/slits/ss1r').getFloatData()
+def updateOffset(gapBox, offsetBox):
+    offsetBox.enabled = 'fully' not in gapBox.value
+    
+def getSlitGapAndOffset(aPath, a0, bPath, b0):
+    a = sics.getValue(aPath).getFloatData()
+    b = sics.getValue(bPath).getFloatData()
+        
+    gap    = (a - a0 - (b - b0)) / 1.0
+    offset = (a - a0 + (b - b0)) / 2.0
+    
+    return (gap, offset)
 
 ss1u0 = -8.04
 ss1d0 = -7.30
-
-ss1vg = (ss1u - ss1u0 - (ss1d - ss1d0)) / 1.0
-ss1vo = (ss1u - ss1u0 + (ss1d - ss1d0)) / 2.0
-
 ss1r0 = 28.35
 ss1l0 = 27.75
 
-ss1hg = (ss1r - ss1r0 - (ss1l - ss1l0)) / 1.0
-ss1ho = (ss1r - ss1r0 + (ss1l - ss1l0)) / 2.0
+(ss1vg, ss1vo) = getSlitGapAndOffset('/instrument/slits/ss1u', ss1u0, '/instrument/slits/ss1d', ss1d0)
+(ss1hg, ss1ho) = getSlitGapAndOffset('/instrument/slits/ss1r', ss1r0, '/instrument/slits/ss1l', ss1l0)
 
-pss_ss1vg = Par('string', '%.3f' % ss1vg, options = ['fully closed', '5', '10', '15', '20', '25', '30', '40', '50', 'fully opened'])
+pss_ss1vg = Par('string', '%.1f' % ss1vg, options = ['fully closed', '5', '10', '15', '20', '25', '30', '40', '50', 'fully opened'], command='updateOffset(pss_ss1vg, pss_ss1vo)')
 pss_ss1vg.title = 'vertical gap (mm)'
 
-pss_ss1vo = Par('float', '%.3f' % ss1vo)
+pss_ss1vo = Par('float', '%.1f' % ss1vo)
 pss_ss1vo.title = 'vertical offset (mm)'
 
-pss_ss1hg = Par('float', '%.3f' % ss1hg, options = ['fully closed', '5', '10', '15', '20', '25', '30', '40', '50', 'fully opened'])
+pss_ss1hg = Par('string', '%.1f' % ss1hg, options = ['fully closed', '5', '10', '15', '20', '25', '30', '40', '50', 'fully opened'], command='updateOffset(pss_ss1hg, pss_ss1ho)')
 pss_ss1hg.title = 'horizontal gap (mm)'
 
-pss_ss1ho = Par('float', '%.3f' % ss1ho)
+pss_ss1ho = Par('float', '%.1f' % ss1ho)
 pss_ss1ho.title = 'horizontal offset (mm)'
 
 g0 = Group('Pre-Sample Slit')
 g0.numColumns = 2
 g0.add(pss_ss1vg, pss_ss1vo, pss_ss1hg, pss_ss1ho)
+
+ss2u0 =  2.00
+ss2d0 =  1.40
+ss2r0 = -1.00
+ss2l0 =  0.50
+
+(ss2vg, ss2vo) = getSlitGapAndOffset('/instrument/slits/ss2u', ss2u0, '/instrument/slits/ss2d', ss2d0)
+(ss2hg, ss2ho) = getSlitGapAndOffset('/instrument/slits/ss2r', ss2r0, '/instrument/slits/ss2l', ss2l0)
+
+pss_ss2vg = Par('string', '%.1f' % ss2vg, options = pss_ss1vg.options, command='updateOffset(pss_ss2vg, pss_ss2vo)')
+pss_ss2vg.title = 'vertical gap (mm)'
+
+pss_ss2vo = Par('float', '%.1f' % ss2vo)
+pss_ss2vo.title = 'vertical offset (mm)'
+
+pss_ss2hg = Par('string', '%.1f' % ss2hg, options = pss_ss1hg.options, command='updateOffset(pss_ss2hg, pss_ss2ho)')
+pss_ss2hg.title = 'horizontal gap (mm)'
+
+pss_ss2ho = Par('float', '%.1f' % ss2ho)
+pss_ss2ho.title = 'horizontal offset (mm)'
+
+g0 = Group('Post-Sample Slit')
+g0.numColumns = 2
+g0.add(pss_ss2vg, pss_ss2vo, pss_ss2hg, pss_ss2ho)
 
 ## Template
 
@@ -557,41 +584,47 @@ def startScan(configModel):
         sics.execute('hset instrument/detector/TransmissionTube -1')
         return
     
-    # vertical slit
+    # slits
+    def getSlitValues(gap, offset, a0, b0, aOpen, bOpen):
+        
+        if gap == 'fully opened':
+            return (aOpen, bOpen)
+        
+        if gap == 'fully closed':
+            gap    = -5.0
+            offset =  0.0
+        
+        a = a0 + 0.5 * float(gap) + float(offset)
+        b = b0 - 0.5 * float(gap) + float(offset)
+
+        return (a, b)
+    
     ss1vg = configModel.ss1vg
     ss1vo = configModel.ss1vo
-    
-    if ss1vg == 'fully opened':
-        ss1u =  35.8
-        ss1d = -38.8
-    else:
-        if ss1vg == 'fully closed':
-            ss1vg = -5.0
-            ss1vo =  0.0
-            
-        ss1u = ss1u0 + 0.5 * float(ss1vg) + float(ss1vo)
-        ss1d = ss1d0 - 0.5 * float(ss1vg) + float(ss1vo)
-        
-    # horizontal
     ss1hg = configModel.ss1hg
     ss1ho = configModel.ss1ho
-        
-    if ss1hg == 'fully opened':
-        ss1r =  57.0
-        ss1l = -58.0
-    else:
-        if ss1hg == 'fully closed':
-            ss1hg = -5.0
-            ss1ho =  0.0
-            
-        ss1r = ss1r0 + 0.5 * float(ss1hg) + float(ss1ho)
-        ss1l = ss1l0 - 0.5 * float(ss1hg) + float(ss1ho)
+    
+    ss2vg = configModel.ss2vg
+    ss2vo = configModel.ss2vo
+    ss2hg = configModel.ss2hg
+    ss2ho = configModel.ss2ho
 
+    (ss1u, ss1d) = getSlitValues(ss1vg, ss1vo, ss1u0, ss1d0, 35.8, -38.8)
+    (ss1r, ss1l) = getSlitValues(ss1hg, ss1ho, ss1r0, ss1l0, 57.0, -58.0)
+    
+    (ss2u, ss2d) = getSlitValues(ss2vg, ss2vo, ss2u0, ss2d0, 37.0, -39.5)
+    (ss2r, ss2l) = getSlitValues(ss2hg, ss2ho, ss2r0, ss2l0, 35.0, -35.0)
+    
     # apply slits
     sics.execute('run ss1u %.2f' % ss1u)
     sics.execute('run ss1d %.2f' % ss1d)
     sics.execute('run ss1r %.2f' % ss1r)
     sics.execute('run ss1l %.2f' % ss1l)
+    
+    sics.execute('run ss2u %.2f' % ss2u)
+    sics.execute('run ss2d %.2f' % ss2d)
+    sics.execute('run ss2r %.2f' % ss2r)
+    sics.execute('run ss2l %.2f' % ss2l)
     
     # load sample positions
     sam_positions = str(configModel.sam_position)
@@ -1031,11 +1064,16 @@ class ConfigurationModel:
         self.sample_description = str(sample_description.value)
         self.sample_thickness   = float(sample_thickness.value)
         
-        # vertical/horizontal slit
+        # vertical/horizontal pre-slit
         self.ss1vg = float(pss_ss1vg.value)
         self.ss1vo = float(pss_ss1vo.value)
         self.ss1hg = float(pss_ss1hg.value)
         self.ss1ho = float(pss_ss1ho.value)
+        # vertical/horizontal post-slit
+        self.ss2vg = float(pss_ss2vg.value)
+        self.ss2vo = float(pss_ss2vo.value)
+        self.ss2hg = float(pss_ss2hg.value)
+        self.ss2ho = float(pss_ss2ho.value)
         
         # load sample positions
         self.sam_position = str(scan_sam_position.value)

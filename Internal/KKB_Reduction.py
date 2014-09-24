@@ -324,28 +324,22 @@ from __builtin__ import min as builtin_min
 def DeadtimeCorrection(value, deadTime, countTime):
     return value / (1.0 - value * deadTime / countTime)
 '''
-def DeadtimeCorrection(hmm, tid, deadTime, countTimes):
-    if hmm.ndim == 4:
-        tube = hmm[:, 0, :, tid].sum(0) # hmm
-    else:
-        tube = hmm[:, :, tid].sum(0)    # hmm_xy
+def DeadtimeCorrection(counts, deadTime, countTimes):
+    # x1 = x0 - (x0 - y*e^cx0) / (1 - cx0)
         
-    for i in xrange(len(tube)):
-        
-        # x1 = x0 - (x0 - y*e^cx0) / (1 - cx0)
-        
+    for i in xrange(len(counts)):
         dtt = deadTime / countTimes[i]
         
-        y = tube[i]
+        y = counts[i]
         x = y       # initial value
+        
+        # 4 iterations
         for j in xrange(4):
             x = x - (x - y*exp(dtt * x)) / (1 - dtt * x)
             
-        tube[i] = x
+        counts[i] = x
 
         #tube[i] = tube[i] * (1 / (1.0 - tube[i] * deadTime / countTimes[i]))
-    
-    return tube
 
 def interp(q, Q, I):
     
@@ -464,9 +458,14 @@ class ReductionDataset:
         # sum selected tubes
         data = zeros(len(self.Angle))
         for tid in tids:
-            data[:] += DeadtimeCorrection(ds.hmm, tid, self.MainDeadTime, self.CountTimes)
+            if hmm.ndim == 4:
+                data[:] += hmm[:, 0, :, tid].sum(0) # hmm
+            else:
+                data[:] += hmm[:, :, tid].sum(0)    # hmm_xy
+                
+        DeadtimeCorrection(data, self.MainDeadTime, self.CountTimes)
 
-        self.DetCts    = list(data)  
+        self.DetCts    = list(data)
         self.ErrDetCts = [sqrt(cts) for cts in self.DetCts]
         
         if not bm1rate_Patching.value:
@@ -482,7 +481,14 @@ class ReductionDataset:
         else:
             raise Exception('unsupported wavelength')
             
-        self.TransCts = list(DeadtimeCorrection(ds.hmm, tid, self.TransDeadTime, self.CountTimes))
+        if hmm.ndim == 4:
+            data[:] = hmm[:, 0, :, tid].sum(0) # hmm
+        else:
+            data[:] = hmm[:, :, tid].sum(0)    # hmm_xy
+            
+        DeadtimeCorrection(data, self.TransDeadTime, self.CountTimes)
+        self.TransCts = list(data)
+        
         '''
         self.Filename  = ''
         self.FileDate  = ''
