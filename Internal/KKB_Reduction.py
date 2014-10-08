@@ -458,10 +458,10 @@ class ReductionDataset:
         # sum selected tubes
         data = zeros(len(self.Angle))
         for tid in tids:
-            if hmm.ndim == 4:
-                data[:] += hmm[:, 0, :, tid].sum(0) # hmm
+            if ds.hmm.ndim == 4:
+                data[:] += ds.hmm[:, 0, :, tid].sum(0) # hmm
             else:
-                data[:] += hmm[:, :, tid].sum(0)    # hmm_xy
+                data[:] += ds.hmm[:, :, tid].sum(0)    # hmm_xy
                 
         DeadtimeCorrection(data, self.MainDeadTime, self.CountTimes)
 
@@ -481,10 +481,10 @@ class ReductionDataset:
         else:
             raise Exception('unsupported wavelength')
             
-        if hmm.ndim == 4:
-            data[:] = hmm[:, 0, :, tid].sum(0) # hmm
+        if ds.hmm.ndim == 4:
+            data[:] = ds.hmm[:, 0, :, tid].sum(0) # hmm
         else:
-            data[:] = hmm[:, :, tid].sum(0)    # hmm_xy
+            data[:] = ds.hmm[:, :, tid].sum(0)    # hmm_xy
             
         DeadtimeCorrection(data, self.TransDeadTime, self.CountTimes)
         self.TransCts = list(data)
