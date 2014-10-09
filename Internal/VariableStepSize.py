@@ -215,7 +215,9 @@ Group('Template').add(steps_templates)
 scan_variable = Par('string', 'm2om [deg]', options = [
     'pmom [deg]', 'pmchi [deg]', 'm1om [deg]', 'm1chi [deg]', 'm1x [mm]', 'm2om [deg]', 'm2chi [deg]', 'm2x [mm]', 'm2y [mm]', 'mdet [mm]',
     'ss1u [mm]', 'ss1d [mm]', 'ss1l [mm]', 'ss1r [mm]',
-    'ss2u [mm]', 'ss2d [mm]', 'ss2l [mm]', 'ss2r [mm]'], command="scan_variable_plot.value = scan_variable.value")
+    'ss2u [mm]', 'ss2d [mm]', 'ss2l [mm]', 'ss2r [mm]',
+    'ss1vg [mm]', 'ss1vo [mm]', 'ss1hg [mm]', 'ss1ho [mm]',
+    'ss2vg [mm]', 'ss2vo [mm]', 'ss2hg [mm]', 'ss2ho [mm]'], command="scan_variable_plot.value = scan_variable.value")
 
 scan_variable.title = 'Variable'
 
@@ -391,7 +393,9 @@ g1.add(check_tube9, check_tube10)
 scan_variable_plot = Par('string', 'm2om [deg]', options = [
     'pmom [deg]', 'pmchi [deg]', 'm1om [deg]', 'm1chi [deg]', 'm1x [mm]', 'm2om [deg]', 'm2chi [deg]', 'm2x [mm]', 'm2y [mm]', 'mdet [mm]',
     'ss1u [mm]', 'ss1d [mm]', 'ss1l [mm]', 'ss1r [mm]',
-    'ss2u [mm]', 'ss2d [mm]', 'ss2l [mm]', 'ss2r [mm]'])
+    'ss2u [mm]', 'ss2d [mm]', 'ss2l [mm]', 'ss2r [mm]',
+    'ss1vg [mm]', 'ss1vo [mm]', 'ss1hg [mm]', 'ss1ho [mm]',
+    'ss2vg [mm]', 'ss2vo [mm]', 'ss2hg [mm]', 'ss2ho [mm]'])
 
 scan_variable_plot.title = 'Scan Variable'
 
@@ -708,7 +712,7 @@ def startScan(configModel):
                     while not sicsController.getServerStatus().equals(ServerStatus.EAGER_TO_EXECUTE):
                         try:
                             count_roi = int(sicsext.runCommand('hmm configure num_events_filled_to_count_roi'))
-                            # print count_roi
+                            print count_roi
                             
                             if count_roi > preset:
                                 print 'reached desired count_roi'
@@ -829,6 +833,14 @@ def btnPlot_clicked():
     ds.__iDictionary__.addEntry('ss2d', 'entry1/instrument/slits/ss2d')
     ds.__iDictionary__.addEntry('ss2r', 'entry1/instrument/slits/ss2r')
     ds.__iDictionary__.addEntry('ss2l', 'entry1/instrument/slits/ss2l')
+    ds.__iDictionary__.addEntry('ss1vo', 'entry1/instrument/slits/ss1vo')
+    ds.__iDictionary__.addEntry('ss1vg', 'entry1/instrument/slits/ss1vg')
+    ds.__iDictionary__.addEntry('ss1ho', 'entry1/instrument/slits/ss1ho')
+    ds.__iDictionary__.addEntry('ss1hg', 'entry1/instrument/slits/ss1hg')
+    ds.__iDictionary__.addEntry('ss2vo', 'entry1/instrument/slits/ss2vo')
+    ds.__iDictionary__.addEntry('ss2vg', 'entry1/instrument/slits/ss2vg')
+    ds.__iDictionary__.addEntry('ss2ho', 'entry1/instrument/slits/ss2ho')
+    ds.__iDictionary__.addEntry('ss2hg', 'entry1/instrument/slits/ss2hg')
         
     scanVariable = str(scan_variable_plot.value)
     scanVariable = scanVariable[:scanVariable.find(' ')]
