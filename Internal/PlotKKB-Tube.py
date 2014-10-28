@@ -74,7 +74,7 @@ def GetTubeCounts(hmm, tid):
     else:
         return hmm[:, :, tid].sum(0)    # hmm_xy
     
-def TimeNormalization(counts, time):
+def TimeNormalization(counts, time):    
     if counts.size == 1:
         counts[0] = counts[0] * 1.0 / time
     else:
@@ -88,15 +88,21 @@ def DeadtimeCorrection(counts, deadTime, time):
     for i in xrange(len(counts)):
         
         # x1 = x0 - (x0 - y*e^cx0) / (1 - cx0)
+        t = time[i]
         y = counts[i]
         x = y       # initial value
         
-        dtt = deadTime / time[i]
-        
-        for j in xrange(4):
-            x = x - (x - y*exp(dtt * x)) / (1 - dtt * x)
+        if t > 0.5: 
+            dtt = deadTime / time[i]
             
-        counts[i] = x
+            for j in xrange(4):
+                x = x - (x - y*exp(dtt * x)) / (1 - dtt * x)
+                
+            counts[i] = x
+            
+        else:
+            counts[i] = 0
+            
 
         #tube[i] = tube[i] * (1 / (1.0 - tube[i] * deadTime / countTimes[i]))
 
@@ -140,6 +146,10 @@ def proc_fn(path):
     ds.__iDictionary__.addEntry('ss2ho', 'entry1/instrument/slits/gaps/ss2ho')
     ds.__iDictionary__.addEntry('ss2vg', 'entry1/instrument/slits/gaps/ss2vg')
     ds.__iDictionary__.addEntry('ss2vo', 'entry1/instrument/slits/gaps/ss2vo')
+    
+    for i in xrange(len(ds.time)):        
+        if ds.time[i] < 0.5:
+            ds.time[i] = float('inf')
     
     scanVariable = str(scan_variable.value)
     scanVariable = scanVariable[:scanVariable.find(' ')]

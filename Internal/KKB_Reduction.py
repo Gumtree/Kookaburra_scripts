@@ -65,8 +65,8 @@ TransDeadTime_FromFile = Par('float', 'NaN')
 TransDeadTime_FromFile.title = ''
 TransDeadTime_FromFile.enabled = False
 
-bkgLevel = Par('float', '98')
-bkgLevel.title = 'normalized BKG Level'
+bkgLevel = Par('float', '38.5')
+bkgLevel.title = 'Normalised BKG Level'
 bkgLevel.enabled = False
 bkgLevel_Patching = Par('bool', False, command='bkgLevel.enabled = bkgLevel_Patching.value')
 bkgLevel_Patching.title = ''
@@ -74,8 +74,17 @@ bkgLevel_FromFile = Par('float', 'NaN')
 bkgLevel_FromFile.title = ''
 bkgLevel_FromFile.enabled = False
 
+TransBkg = Par('float', '75')
+TransBkg.title = 'Trans BKG Level'
+TransBkg.enabled = False
+TransBkg_Patching = Par('bool', False, command='TransBkg.enabled = TransBkg_Patching.value')
+TransBkg_Patching.title = ''
+TransBkg_FromFile = Par('float', 'NaN')
+TransBkg_FromFile.title = ''
+TransBkg_FromFile.enabled = False
+
 dOmega = Par('float', '2.3e-6')
-dOmega.title = 'dOmega (Ster)'
+dOmega.title = 'dOmega (ster)'
 dOmega.enabled = False
 dOmega_Patching = Par('bool', False, command='dOmega.enabled = dOmega_Patching.value')
 dOmega_Patching.title = ''
@@ -84,7 +93,7 @@ dOmega_FromFile.title = ''
 dOmega_FromFile.enabled = False
 
 gDQv = Par('float', '0.0586')
-gDQv.title = 'vertical Q divergence (1/A)'
+gDQv.title = 'Vertical Q Divergence (1/A)'
 gDQv.enabled = False
 gDQv_Patching = Par('bool', False, command='gDQv.enabled = gDQv_Patching.value')
 gDQv_Patching.title = ''
@@ -92,38 +101,68 @@ gDQv_FromFile = Par('float', 'NaN')
 gDQv_FromFile.title = ''
 gDQv_FromFile.enabled = False
 
-bm1rate = Par('float', '43.0')
-bm1rate.title = 'bm1 count rate (counts/s)'
+bm1rate = Par('float', '52.0')
+bm1rate.title = 'bm1 Count Rate (counts/s)'
 bm1rate.enabled = False
 bm1rate_Patching = Par('bool', False, command='bm1rate.enabled = bm1rate_Patching.value')
 bm1rate_Patching.title = ''
 
-parametersShowBtn = Act('parametersShow()', 'show parameters')
+parametersShowBtn = Act('parametersShow()', 'Show Parameters')
 
 g1 = Group('Parameter Patching')
 g1.numColumns = 3
-g1.add(Wavelength_Patching, Wavelength, Wavelength_FromFile, Thickness_Patching, Thickness, Thickness_FromFile, MainDeadTime_Patching, MainDeadTime, MainDeadTime_FromFile, TransDeadTime_Patching, TransDeadTime, TransDeadTime_FromFile, bkgLevel_Patching, bkgLevel, bkgLevel_FromFile, dOmega_Patching, dOmega, dOmega_FromFile, gDQv_Patching, gDQv, gDQv_FromFile, bm1rate_Patching, bm1rate, parametersShowBtn)
+g1.add(Wavelength_Patching,
+       Wavelength,
+       Wavelength_FromFile,
+       Thickness_Patching,
+       Thickness,
+       Thickness_FromFile,
+       MainDeadTime_Patching,
+       MainDeadTime,
+       MainDeadTime_FromFile,
+       TransDeadTime_Patching,
+       TransDeadTime,
+       TransDeadTime_FromFile,
+       bkgLevel_Patching,
+       bkgLevel,
+       bkgLevel_FromFile,
+       TransBkg_Patching,
+       TransBkg,
+       TransBkg_FromFile,
+       dOmega_Patching,
+       dOmega,
+       dOmega_FromFile,
+       gDQv_Patching,
+       gDQv,
+       gDQv_FromFile,
+       bm1rate_Patching,
+       bm1rate,
+       parametersShowBtn)
 
 def parametersShow():
-    def TryGet(ds, path):
-        try:
-            return ds[path]
-        except AttributeError:
-            return float('NaN')
+    def TryGet(ds, pathList):
+        for path in pathList:
+            try:
+                return ds[path]
+            except AttributeError:
+                pass
+        
+        return float('NaN')
         
     datasets = __DATASOURCE__.getSelectedDatasets()
     if len(datasets) == 1:
         for sds in datasets:
             ds = Dataset(str(sds.getLocation()))
-            Wavelength_FromFile.value = TryGet(ds, 'entry1/instrument/crystal/wavelength')
-            Thickness_FromFile.value  = TryGet(ds, 'entry1/sample/thickness'             )
+            Wavelength_FromFile.value = TryGet(ds, ['entry1/instrument/crystal/wavelength'])
+            Thickness_FromFile.value  = TryGet(ds, ['entry1/sample/thickness'             ])
             
-            MainDeadTime_FromFile.value  = TryGet(ds, 'entry1/instrument/detector/MainDeadTime' )
-            TransDeadTime_FromFile.value = TryGet(ds, 'entry1/instrument/detector/TransDeadTime')
+            MainDeadTime_FromFile.value  = TryGet(ds, ['entry1/instrument/detector/MainDeadTime' ])
+            TransDeadTime_FromFile.value = TryGet(ds, ['entry1/instrument/detector/TransDeadTime'])
             
-            bkgLevel_FromFile.value = TryGet(ds, 'entry1/experiment/bkgLevel')
-            dOmega_FromFile.value   = TryGet(ds, 'entry1/experiment/dOmega'  )
-            gDQv_FromFile.value     = TryGet(ds, 'entry1/experiment/gDQv'    )
+            bkgLevel_FromFile.value = TryGet(ds, ['entry1/experiment/bkgLevel'])
+            TransBkg_FromFile.value = TryGet(ds, ['entry1/instrument/detector/TransBackground'])
+            dOmega_FromFile.value   = TryGet(ds, ['entry1/experiment/dOmega', 'entry1/instrument/crystal/dOmega'])
+            gDQv_FromFile.value     = TryGet(ds, ['entry1/experiment/gDQv'  , 'entry1/instrument/crystal/gDQv'  ])
 
     else:
         print 'please select one file'
@@ -134,23 +173,26 @@ defaultMCR.title = 'Default MCR'
 TWideMarker = Par('float', '3e-3')
 TWideMarker.title = 'TWide Marker (1/A)'
 
-Group('Reduction Parameters').add(defaultMCR, TWideMarker)
+samIgnorePts = Par('string', '')
+samIgnorePts.title = 'Ignore Sample Data Points' 
+
+Group('Reduction Parameters').add(defaultMCR, TWideMarker, samIgnorePts)
 
 
 # empty measurement
 
 empFiles = Par('string', '')
 empFiles.title = 'Files' 
-empFilesTakeBtn = Act('empFilesTake()', 'take from selection')
+empFilesTakeBtn = Act('empFilesTake()', 'Take From Selection')
 
 empIgnorePts = Par('string', '')
-empIgnorePts.title = 'ignore data points' 
+empIgnorePts.title = 'Ignore Data Points' 
 
 empLevel = Par('float', '0')
-empLevel.title = 'empty level'
+empLevel.title = 'Empty Level'
 empLevel_SampleCount = Par('int', '10')
-empLevel_SampleCount.title = 'tail points'
-empLevelCalcBtn = Act('empLevelCalc()', 'determine empty level')
+empLevel_SampleCount.title = 'Tail Points'
+empLevelCalcBtn = Act('empLevelCalc()', 'Determine Empty Level')
 
 Group('Empty Scans').add(empFiles, empFilesTakeBtn, empIgnorePts, empLevel, empLevel_SampleCount, empLevelCalcBtn)
 
@@ -246,10 +288,10 @@ bkgLevelGetLevel.title = 'BKG Level'
 bkgLevelGetLevel.enabled = False
 
 bkgLevelGetNLevel = Par('string', '')
-bkgLevelGetNLevel.title = 'normalized BKG Level'
+bkgLevelGetNLevel.title = 'Normalised BKG Level'
 bkgLevelGetNLevel.enabled = False
 
-bkgLevelGetBtn = Act('bkgLevelGet()', 'take from selection')
+bkgLevelGetBtn = Act('bkgLevelGet()', 'Take From Selection')
 
 Group('Determine Background Level').add(bkgLevelGetFile, bkgLevelGetMcr, bkgLevelGetLevel, bkgLevelGetNLevel, bkgLevelGetBtn)
 
@@ -267,7 +309,7 @@ def bkgLevelGet():
             
             # get times
             ctTimes      = list(ds['entry1/instrument/detector/time'])
-            mainDeadTime = TryGet(ds, 'entry1/instrument/detector/MainDeadTime', MainDeadTime.value, MainDeadTime_Patching.value)
+            mainDeadTime = TryGet(ds, ['entry1/instrument/detector/MainDeadTime'], MainDeadTime.value, MainDeadTime_Patching.value)
             
             # sum selected tubes
             data = zeros(len(ctTimes))
@@ -365,13 +407,17 @@ def slopeAt(list, i):
 
     return yH - yL
 
-def TryGet(ds, path, default, forceDefault=False):
+def TryGet(ds, pathList, default, forceDefault=False):
     if forceDefault:
-        return default        
-    try:
-        return ds[path]
-    except AttributeError:
         return default
+    
+    for path in pathList:
+        try:
+            return ds[path]
+        except AttributeError:
+            pass
+        
+    return default
 
 def RemoveIgnoredRanges(ds, ignorePtsStr):
     
@@ -428,16 +474,18 @@ class ReductionDataset:
         
         # parameters
         
-        self.Wavelength = TryGet(ds, 'entry1/instrument/crystal/wavelength', Wavelength.value, Wavelength_Patching.value)
-        self.Thick      = TryGet(ds, 'entry1/sample/thickness'             , Thickness.value , Thickness_Patching.value ) / 10.0 # mm to cm
+        self.Wavelength = TryGet(ds, ['entry1/instrument/crystal/wavelength'], Wavelength.value, Wavelength_Patching.value)
+        self.Thick      = TryGet(ds, ['entry1/sample/thickness'             ], Thickness.value , Thickness_Patching.value ) / 10.0 # mm to cm
         
-        self.MainDeadTime  = TryGet(ds, 'entry1/instrument/detector/MainDeadTime' , MainDeadTime.value , MainDeadTime_Patching.value )
-        self.TransDeadTime = TryGet(ds, 'entry1/instrument/detector/TransDeadTime', TransDeadTime.value, TransDeadTime_Patching.value)
+        self.MainDeadTime  = TryGet(ds, ['entry1/instrument/detector/MainDeadTime' ], MainDeadTime.value , MainDeadTime_Patching.value )
+        self.TransDeadTime = TryGet(ds, ['entry1/instrument/detector/TransDeadTime'], TransDeadTime.value, TransDeadTime_Patching.value)
         
+        self.transBkgLevel = TryGet(ds, ['entry1/instrument/detector/TransBackground'], TransBkg.value, TransBkg_Patching.value)
+            
         self.empLevel = empLevel.value
-        self.bkgLevel = TryGet(ds, 'entry1/experiment/bkgLevel', bkgLevel.value, bkgLevel_Patching.value)
-        self.dOmega   = TryGet(ds, 'entry1/experiment/dOmega'  , dOmega.value  , dOmega_Patching.value  )
-        self.gDQv     = TryGet(ds, 'entry1/experiment/gDQv'    , gDQv.value    , gDQv_Patching.value    )
+        self.bkgLevel = TryGet(ds, ['entry1/experiment/bkgLevel'], bkgLevel.value, bkgLevel_Patching.value)
+        self.dOmega   = TryGet(ds, ['entry1/experiment/dOmega', 'entry1/instrument/crystal/dOmega'], dOmega.value  , dOmega_Patching.value  )
+        self.gDQv     = TryGet(ds, ['entry1/experiment/gDQv'  , 'entry1/instrument/crystal/gDQv'  ], gDQv.value    , gDQv_Patching.value    )
         
         self.defaultMCR  = defaultMCR.value
         self.TWideMarker = TWideMarker.value
@@ -487,7 +535,10 @@ class ReductionDataset:
             data[:] = ds.hmm[:, :, tid].sum(0)    # hmm_xy
             
         DeadtimeCorrection(data, self.TransDeadTime, self.CountTimes)
-        self.TransCts = list(data)
+        
+        # subtraction of transmission background
+        self.TransCts = [cts - self.transBkgLevel for cts in data]
+
         
         '''
         self.Filename  = ''
@@ -628,6 +679,7 @@ class ReductionDataset:
         #self.Qvals = [f * sin((angle - self.PeakAng) / 2) for angle in self.Angle]
         self.Qvals = [f * sin(deg2rad * (angle - self.PeakAng) / 2) for angle in self.Angle]
         
+        # Christine demands to leave this here (16/10/2014)
         #deg2QConv  = 5.55e-5 # TBD
         #self.Qvals = [deg2QConv * (angle - self.PeakAng) for angle in self.Angle]
 
@@ -718,8 +770,12 @@ class ReductionDataset:
             # divergence, in terms of Q (1/A) 
             gdqv = self.gDQv
 
+            preQ = float('nan')
             for i in xrange(len(self.Qvals)):
-                fp.write("%15.6g %15.6g %15.6g %15.6g %15.6g %15.6g" % (self.Qvals[i], self.DetCts[i], self.ErrDetCts[i], -gdqv, -gdqv, -gdqv) + LE)
+                newQ = self.Qvals[i]
+                if preQ != newQ:
+                    fp.write("%15.6g %15.6g %15.6g %15.6g %15.6g %15.6g" % (newQ, self.DetCts[i], self.ErrDetCts[i], -gdqv, -gdqv, -gdqv) + LE)
+                    preQ = newQ
 
 def LoadNxHdf(filePaths):
     result = None
@@ -757,7 +813,7 @@ def PlotDataset(plot, ds, title):
     
     plot.add_dataset(data)
     
-def PlotTransmitionDataset(plot, ds, title):
+def PlotTransmissionDataset(plot, ds, title):
     data = zeros(len(ds.Qvals))
     data[:]     = ds.TransCts
     data.var[:] = 0
@@ -835,7 +891,8 @@ def __run_script__(fns):
 
     print 'sample:', ', '.join(dsFilePaths)
     ds = LoadNxHdf(dsFilePaths)    
-    ds.SortAngles()
+    ds.SortAngles()    
+    ds = RemoveIgnoredRanges(ds, samIgnorePts.value)
     ds.FindZeroAngle()
     ds.DetermineQVals()
     ds.FindTWideCts()
@@ -872,8 +929,8 @@ def __run_script__(fns):
     
     # plot 2
     Plot2.clear()
-    PlotTransmitionDataset(Plot2, ds, 'SAM')
-    PlotTransmitionDataset(Plot2, em, 'EMP')
+    PlotTransmissionDataset(Plot2, ds, 'SAM')
+    PlotTransmissionDataset(Plot2, em, 'EMP')
     
     Plot2.title   = 'Transmission'
     Plot2.x_label = 'q (1/Angstrom)'

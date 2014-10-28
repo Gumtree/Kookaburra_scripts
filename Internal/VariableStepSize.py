@@ -7,19 +7,22 @@ from org.gumtree.gumnix.sics.control import ServerStatus
 from pickle import Pickler, Unpickler
 import time
 
+from math import log as ln
+from math import exp, isnan, isinf
+
 from __builtin__ import max as builtin_max
 from __builtin__ import min as builtin_min
 
 ## templates
 
 reference_templates_dict = {}
-reference_templates_dict['Si111'] = 179.614
+reference_templates_dict['Si111'] = 179.6142
 reference_templates_dict['Si311'] =  -0.02270
 
 steps_templates_dict = {}
 steps_templates_dict['Si111: Comprehensive Scan'] = [
     'count_roi',
-    [33, 6.0e-5, 10000, 1200],
+    [33, 6.0e-5,  1000, 1200],
     [13, 1.2e-4,  1000, 1200],
     [15, 2.4e-4,  1000, 1200],
     [10, 6.0e-4,  1000, 1200],
@@ -36,17 +39,16 @@ steps_templates_dict['Si111: CHECK INTESITY MAIN TRANS BACKGROUND'] = [
 
 steps_templates_dict['Si111: Find Primary Beam'] = [
     'time',
-    [31, 0.00025, 1, 1200]]
+    [31, 6.0e-5, 1, 1200]]
 
 steps_templates_dict['Si111: Check Tsas'] = [
-
     'time',
     [17, 1.2e-4, 1, 1200],
     [2, 0.1,  20, 1200]]
 
 steps_templates_dict['Si111: Fast Scan'] = [
     'count_roi',
-    [17, 1.2e-4, 10000, 1200],
+    [17, 1.2e-4,  1000, 1200],
     [ 6, 4.8e-4,  1000, 1200],
     [ 6, 1.2e-3,  1000, 1200],
     [ 5, 2.4e-3,  1000, 1200],
@@ -139,7 +141,9 @@ except:
 
 crystal_change = Act('switchCrystal()', 'switch to other crystal')
     
-Group('Crystal').add(crystal_name, crystal_change)
+g0 = Group('Crystal')
+g0.numColumns = 2
+g0.add(crystal_name, crystal_change)
 
 ## Pre/Post-Sample Slit
 
@@ -155,25 +159,33 @@ def getSlitGapAndOffset(aPath, a0, bPath, b0):
     
     return (gap, offset)
 
+
+crystal = str(crystal_name.value)
+if 'Si111' in crystal:
+    ss1r0 = 28.35
+    ss1l0 = 27.75
+
+elif 'Si311' in crystal:
+    ss1r0 = +0.3
+    ss1l0 = -0.3
+    
 ss1u0 = -8.04
 ss1d0 = -7.30
-ss1r0 = 28.35
-ss1l0 = 27.75
 
 (ss1vg, ss1vo) = getSlitGapAndOffset('/instrument/slits/ss1u', ss1u0, '/instrument/slits/ss1d', ss1d0)
 (ss1hg, ss1ho) = getSlitGapAndOffset('/instrument/slits/ss1r', ss1r0, '/instrument/slits/ss1l', ss1l0)
 
 pss_ss1vg = Par('string', '%.1f' % ss1vg, options = ['fully closed', '5', '10', '15', '20', '25', '30', '40', '50', 'fully opened'], command='updateOffset(pss_ss1vg, pss_ss1vo)')
-pss_ss1vg.title = 'vertical gap (mm)'
+pss_ss1vg.title = 'Vertical Gap (mm)'
 
 pss_ss1vo = Par('float', '%.1f' % ss1vo)
-pss_ss1vo.title = 'vertical offset (mm)'
+pss_ss1vo.title = 'Vertical Offset (mm)'
 
 pss_ss1hg = Par('string', '%.1f' % ss1hg, options = ['fully closed', '5', '10', '15', '20', '25', '30', '40', '50', 'fully opened'], command='updateOffset(pss_ss1hg, pss_ss1ho)')
-pss_ss1hg.title = 'horizontal gap (mm)'
+pss_ss1hg.title = 'Horizontal Gap (mm)'
 
 pss_ss1ho = Par('float', '%.1f' % ss1ho)
-pss_ss1ho.title = 'horizontal offset (mm)'
+pss_ss1ho.title = 'Horizontal Offset (mm)'
 
 g0 = Group('Pre-Sample Slit')
 g0.numColumns = 2
@@ -188,16 +200,16 @@ ss2l0 =  0.50
 (ss2hg, ss2ho) = getSlitGapAndOffset('/instrument/slits/ss2r', ss2r0, '/instrument/slits/ss2l', ss2l0)
 
 pss_ss2vg = Par('string', '%.1f' % ss2vg, options = pss_ss1vg.options, command='updateOffset(pss_ss2vg, pss_ss2vo)')
-pss_ss2vg.title = 'vertical gap (mm)'
+pss_ss2vg.title = 'Vertical Gap (mm)'
 
 pss_ss2vo = Par('float', '%.1f' % ss2vo)
-pss_ss2vo.title = 'vertical offset (mm)'
+pss_ss2vo.title = 'Vertical Offset (mm)'
 
 pss_ss2hg = Par('string', '%.1f' % ss2hg, options = pss_ss1hg.options, command='updateOffset(pss_ss2hg, pss_ss2ho)')
-pss_ss2hg.title = 'horizontal gap (mm)'
+pss_ss2hg.title = 'Horizontal Gap (mm)'
 
 pss_ss2ho = Par('float', '%.1f' % ss2ho)
-pss_ss2ho.title = 'horizontal offset (mm)'
+pss_ss2ho.title = 'Horizontal Offset (mm)'
 
 g0 = Group('Post-Sample Slit')
 g0.numColumns = 2
@@ -244,12 +256,14 @@ for key in steps_templates_dict.keys():
 scan_sam_position = Par('string', 'fixed', options = ['fixed', '1', '2', '3', '4', '5'])
 scan_sam_position.title = 'Sample Position'
 
-start_scan = Act('startScan(ConfigurationModel())', 'start scan')
+logscale_position = Par('bool', False)
+logscale_position.title = 'Logarithmic Steps'
 
 g0 = Group('Scan')
 g0.numColumns = 2
-g0.add(scan_variable, scan_reference, scan_mode, scan_min_time, scan_sam_position, start_scan)
+g0.add(scan_variable, scan_reference, scan_mode, scan_min_time, scan_sam_position, logscale_position)
 
+start_scan = Act('startScan(ConfigurationModel())', 'Start Scan')
 
 ## Measurement Steps
 
@@ -411,7 +425,7 @@ scan_variable_sorting.title = 'Sorting'
 Group('Plotting - Settings').add(scan_variable_plot, combine_mode, scan_variable_sorting)
 
 # export to csv
-btnPlot    = Act('btnPlot_clicked()', 'Plot selected Dataset')
+btnPlot    = Act('btnPlot_clicked()', 'Plot Selected Data Set')
 btnExport  = Act('export_clicked()', 'Export to CSV')
 
 def setTemplate():
@@ -473,7 +487,10 @@ def getScan():
     scan = { 'angles': [], 'presets': [], 'maxTimes': [], 'groups': [] }
     
     first = True
-    angle = scan_reference.value
+    angle_ref = scan_reference.value
+    angle     = angle_ref
+    logscale  = False # first data points are always on a linear scale
+    
     for stepInfoItem in stepInfo:
         if stepInfoItem['enabled'].value :
             dataPoints = stepInfoItem['dataPoints'].value
@@ -493,12 +510,22 @@ def getScan():
             
             scan['groups'].append(angle)
             for i in xrange(1, dataPoints):
+                if logscale:
+                    a0 = ln(angle - angle_ref - stepSize)
+                    a1 = ln(angle - angle_ref           )                    
+                    a2 = a1 + (a1 - a0);
+                    
+                    if not isnan(a2) and not isinf(a2):
+                        stepSize = angle_ref + exp(a2) - angle
+                    
                 angle += stepSize
+
                 scan['angles'  ].append(angle)
                 scan['presets' ].append(preset)
                 scan['maxTimes'].append(maxTime)
 
-        first = False
+        first    = False
+        logscale = bool(logscale_position.value)
         
     return scan
 
@@ -525,12 +552,31 @@ def startScan(configModel):
 
     empLevel = 0.76
     bkgLevel = 0.98757
-    dOmega = 2.3E-6
-    gDQv = 0.0586
-    #gDQh = 0
     
-    MainDeadTime = 1.08E-6
-    TransDeadTime = 1.08E-6
+    MainDeadTime    = 1.08E-6
+    TransDeadTime   = 1.08E-6
+        
+    if 'Si111' in crystal:
+        dOmega = 2.3E-6
+        gDQv   = 0.0586
+        gDQh   = 0
+        
+        wavelength       = 4.74
+        TransmissionTube = 10
+        TransBackground  = 75.0     # counts per second
+    
+    elif 'Si311' in crystal:
+        dOmega = 1.2345E-6
+        gDQv   = 1.2345
+        gDQh   = 0
+        
+        wavelength       = 2.37
+        TransmissionTube = 9
+        TransBackground  = 12345.0  # counts per second
+        
+    else:
+        print 'selected crystal is invalid'
+        return
     
     ''' angles '''
     
@@ -566,27 +612,17 @@ def startScan(configModel):
     
     sics.execute('hset experiment/bkgLevel %g'  % bkgLevel)
     sics.execute('hset experiment/empLevel %g'  % empLevel)
-    sics.execute('hset experiment/gDQv %g'      % gDQv)
-    #sics.execute('hset experiment/gDQh %g'      % gDQh)
     
-    sics.execute('hset instrument/crystal/dOmega %g' % dOmega)
+    sics.execute('hset instrument/detector/MainDeadTime %g'     % MainDeadTime)
+    sics.execute('hset instrument/detector/TransDeadTime %g'    % TransDeadTime)
+    sics.execute('hset instrument/detector/TransBackground %g'  % TransBackground)
+    sics.execute('hset instrument/detector/TransmissionTube %i' % TransmissionTube)
     
-    sics.execute('hset instrument/detector/MainDeadTime %g'  % MainDeadTime)
-    sics.execute('hset instrument/detector/TransDeadTime %g' % TransDeadTime)
-    
-    if 'Si111' in crystal:
-        sics.execute('hset instrument/crystal/wavelength 4.74')
-        sics.execute('hset instrument/detector/TransmissionTube 10')
-    
-    elif 'Si311' in crystal:
-        sics.execute('hset instrument/crystal/wavelength 2.37')
-        sics.execute('hset instrument/detector/TransmissionTube 9')
-        
-    else:
-        print 'selected crystal is invalid'
-        sics.execute('hset instrument/crystal/wavelength 0')
-        sics.execute('hset instrument/detector/TransmissionTube -1')
-        return
+    sics.execute('hset instrument/crystal/dOmega %g'      % dOmega)
+    sics.execute('hset instrument/crystal/gDQv %g'        % gDQv)
+    sics.execute('hset instrument/crystal/gDQh %g'        % gDQh)
+    sics.execute('hset instrument/crystal/wavelength %g'  % wavelength)
+    sics.execute('hset instrument/crystal/scan_variable ' + scanVariable);
     
     # slits
     def getSlitValues(gap, offset, a0, b0, aOpen, bOpen):
@@ -684,7 +720,6 @@ def startScan(configModel):
             
             print 'run %s %.6f' % (scanVariable, angle)
             sics.execute('run %s %.6f' % (scanVariable, angle))
-            #sics.drive(scanVariable, angle)
             time.sleep(10)
             while not sicsController.getServerStatus().equals(ServerStatus.EAGER_TO_EXECUTE):
                 time.sleep(0.1)
@@ -1047,7 +1082,7 @@ def __run_script__(fns):
     global Plot2
     global Plot3
         
-    print 'please press "start scan" in scan box'
+    print 'please press "Start Scan" in scan box'
 
 def __dispose__():
     global Plot1
