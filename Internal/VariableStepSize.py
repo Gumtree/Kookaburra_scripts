@@ -146,14 +146,16 @@ def updateOffset(gapBox, offsetBox):
     offsetBox.enabled = 'fully' not in gapBox.value
     
 def getSlitGapAndOffset(aPath, a0, bPath, b0):
-    a = sics.getValue(aPath).getFloatData()
-    b = sics.getValue(bPath).getFloatData()
+    try:
+        a = sics.getValue(aPath).getFloatData()
+        b = sics.getValue(bPath).getFloatData()
+            
+        gap    = (a - a0 - (b - b0)) / 1.0
+        offset = (a - a0 + (b - b0)) / 2.0
         
-    gap    = (a - a0 - (b - b0)) / 1.0
-    offset = (a - a0 + (b - b0)) / 2.0
-    
-    return (gap, offset)
-
+        return (gap, offset)
+    except:
+        return (float('nan'), float('nan'))
 
 crystal = str(crystal_name.value)
 if 'Si111' in crystal:
@@ -164,6 +166,10 @@ elif 'Si311' in crystal:
     ss1r0 = -9.16
     ss1l0 = -9.76
     
+else:
+    ss1r0 = float('nan')
+    ss1l0 = float('nan')
+    
 ss1u0 = -8.04
 ss1d0 = -7.30
 
@@ -173,13 +179,13 @@ ss1d0 = -7.30
 pss_ss1vg = Par('string', '%.1f' % ss1vg, options = ['fully closed', '5', '10', '15', '20', '25', '30', '40', '50', 'fully opened'], command='updateOffset(pss_ss1vg, pss_ss1vo)')
 pss_ss1vg.title = 'Vertical Gap (mm)'
 
-pss_ss1vo = Par('float', '%.1f' % ss1vo)
+pss_ss1vo = Par('float', ss1vo)
 pss_ss1vo.title = 'Vertical Offset (mm)'
 
 pss_ss1hg = Par('string', '%.1f' % ss1hg, options = ['fully closed', '5', '10', '15', '20', '25', '30', '40', '50', 'fully opened'], command='updateOffset(pss_ss1hg, pss_ss1ho)')
 pss_ss1hg.title = 'Horizontal Gap (mm)'
 
-pss_ss1ho = Par('float', '%.1f' % ss1ho)
+pss_ss1ho = Par('float', ss1ho)
 pss_ss1ho.title = 'Horizontal Offset (mm)'
 
 g0 = Group('Pre-Sample Slit')
@@ -197,13 +203,13 @@ ss2l0 =  0.50
 pss_ss2vg = Par('string', '%.1f' % ss2vg, options = pss_ss1vg.options, command='updateOffset(pss_ss2vg, pss_ss2vo)')
 pss_ss2vg.title = 'Vertical Gap (mm)'
 
-pss_ss2vo = Par('float', '%.1f' % ss2vo)
+pss_ss2vo = Par('float', ss2vo)
 pss_ss2vo.title = 'Vertical Offset (mm)'
 
 pss_ss2hg = Par('string', '%.1f' % ss2hg, options = pss_ss1hg.options, command='updateOffset(pss_ss2hg, pss_ss2ho)')
 pss_ss2hg.title = 'Horizontal Gap (mm)'
 
-pss_ss2ho = Par('float', '%.1f' % ss2ho)
+pss_ss2ho = Par('float', ss2ho)
 pss_ss2ho.title = 'Horizontal Offset (mm)'
 
 g0 = Group('Post-Sample Slit')
