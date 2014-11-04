@@ -17,7 +17,7 @@ from __builtin__ import min as builtin_min
 
 reference_templates_dict = {}
 reference_templates_dict['Si111'] = 179.6142
-reference_templates_dict['Si311'] =  -0.02270
+reference_templates_dict['Si311'] =  -0.02563
 
 steps_templates_dict = {}
 steps_templates_dict['Si111: Comprehensive Scan'] = [
@@ -70,15 +70,10 @@ steps_templates_dict['Si311: Find Primary Beam'] = [
     'time',
     [51, 0.00004, 1, 1200]]
 
-steps_templates_dict['TEST for Si111'] = [
+steps_templates_dict['Si311: Logarithmic Scan'] = [
     'count_roi',
-    [33, 1.3e-5, 50000, 1200],
-    [13, 6.0e-5,  1000, 1200],
-    [15, 1.2e-4,  1000, 1200],
-    [10, 3.0e-4,  1000, 1200],
-    [10, 6.0e-4,  1000, 1200],
-    [16, 1.2e-3,  1000, 1200],
-    [60, 3.0e-3,  1000, 1200]]
+    [31, 2e-5,    1000, 1200],
+    [60, 2.5e-5,  1000, 1200]]
 steps_templates_dict['Si311: Comprehensive Scan'] = [
     'count_roi',
     [21, 1.3e-5, 50000, 1200],
@@ -166,8 +161,8 @@ if 'Si111' in crystal:
     ss1l0 = 27.75
 
 elif 'Si311' in crystal:
-    ss1r0 = +0.3
-    ss1l0 = -0.3
+    ss1r0 = -9.16
+    ss1l0 = -9.76
     
 ss1u0 = -8.04
 ss1d0 = -7.30
