@@ -12,6 +12,44 @@ from math import exp, isnan, isinf
 
 from __builtin__ import max as builtin_max
 from __builtin__ import min as builtin_min
+from org.eclipse.swt.widgets import FileDialog
+from org.eclipse.swt import SWT
+from org.eclipse.swt.widgets import Display
+from java.io import File
+import time
+
+SINGLE_TYPE = SWT.SINGLE
+SAVE_TYPE   = SWT.SAVE
+MULTI_TYPE  = SWT.MULTI
+
+class __Display_Runnable__(Runnable):
+    def __init__(self, type = SINGLE_TYPE, ext = ['*.*']):
+        self.filename = None
+        self.filenames = None
+        self.path = None
+        self.type = type
+        self.ext = ext
+    
+    def run(self):
+        global __UI__
+        dialog = FileDialog(__UI__.getShell(), self.type);
+        dialog.setFilterExtensions(self.ext)
+        dialog.open()
+        self.filename = dialog.getFilterPath() + File.separator + dialog.getFileName()
+        self.filenames = dialog.getFileNames()
+        self.path = dialog.getFilterPath()
+         
+def open_file_dialog(type = SWT.SINGLE, ext = ['*.*']):
+    __display_run__ = __Display_Runnable__(type, ext)
+    Display.getDefault().asyncExec(__display_run__)
+    while __display_run__.filename is None:
+        time.sleep(0.5)
+    if type == SWT.MULTI:
+        fns = []
+        for fn in __display_run__.filenames:
+            fns.append(__display_run__.path + '/' + fn)
+        return fns
+    return __display_run__.filename
 
 ## templates
 
@@ -21,7 +59,7 @@ reference_templates_dict['Si311'] =  -0.02563
 
 steps_templates_dict = {}
 steps_templates_dict['Si111: Comprehensive Scan'] = [
-    'count_roi',
+    'count_roi', 'linear',
     [33, 6.0e-5,  1000, 1200],
     [13, 1.2e-4,  1000, 1200],
     [15, 2.4e-4,  1000, 1200],
@@ -31,23 +69,23 @@ steps_templates_dict['Si111: Comprehensive Scan'] = [
     [60, 6.0e-3,  1000, 1200]]
 
 steps_templates_dict['Si111: CHECK INTESITY MAIN TRANS BACKGROUND'] = [
-    'count_roi',
+    'count_roi', 'linear',
     [33, 6.0e-5,  1000, 1200],
     [13, 1.2e-4,  1000, 1200],
     [8, 2.4e-4,  1000, 1200],
     [3, 0.1,  1000, 1200]]
 
 steps_templates_dict['Si111: Find Primary Beam'] = [
-    'time',
+    'time', 'linear',
     [31, 6.0e-5, 1, 1200]]
 
 steps_templates_dict['Si111: Check Tsas'] = [
-    'time',
+    'time', 'linear',
     [17, 1.2e-4, 1, 1200],
     [2, 0.1,  20, 1200]]
 
 steps_templates_dict['Si111: Fast Scan'] = [
-    'count_roi',
+    'count_roi', 'linear',
     [17, 1.2e-4,  1000, 1200],
     [ 6, 4.8e-4,  1000, 1200],
     [ 6, 1.2e-3,  1000, 1200],
@@ -56,7 +94,7 @@ steps_templates_dict['Si111: Fast Scan'] = [
     [30, 9.0e-3,  1000, 1200]]
 
 steps_templates_dict['Si111: Quick Overview Scan 10 seconds'] = [
-    'time',
+    'time', 'linear',
     [17, 1.2e-4,   1, 1200],
     [ 6, 4.8e-4,  10, 1200],
     [ 6, 1.2e-3,  10, 1200],
@@ -67,15 +105,15 @@ steps_templates_dict['Si111: Quick Overview Scan 10 seconds'] = [
 
 
 steps_templates_dict['Si311: Find Primary Beam'] = [
-    'time',
+    'time', 'linear',
     [51, 0.00004, 1, 1200]]
 
 steps_templates_dict['Si311: Logarithmic Scan'] = [
-    'count_roi',
+    'count_roi', 'logscale',
     [31, 2e-5,    1000, 1200],
     [60, 2.5e-5,  1000, 1200]]
 steps_templates_dict['Si311: Comprehensive Scan'] = [
-    'count_roi',
+    'count_roi', 'linear',
     [21, 1.3e-5, 50000, 1200],
     [13, 6.0e-5,  1000, 1200],
     [15, 1.2e-4,  1000, 1200],
@@ -86,7 +124,7 @@ steps_templates_dict['Si311: Comprehensive Scan'] = [
 
 
 steps_templates_dict['Test m2chi scan'] = [
-    'time',
+    'time', 'linear',
     [31, 0.1, 1, 1200]]
 
 
@@ -286,6 +324,18 @@ btnPlotSteps = Act('btnPlotSteps_clicked()', 'Plot Measurement Steps') #'compare
 
 ## Save/Load Configuration
 
+
+cnfg_save = Par('string')
+cnfg_save.title = 'Save'
+cnfg_save.enabled = False
+cnfg_save_btn = Act('saveConfiguration()', '>>')
+
+cnfg_load = Par('string')
+cnfg_load.title = 'Load'
+cnfg_load.enabled = False
+cnfg_load_btn = Act('loadConfigurations()', '>>')
+
+'''
 cnfg_save = Par('file', command='saveConfiguration()')
 cnfg_save.title = 'Save'
 cnfg_save.dtype = 'save'
@@ -295,23 +345,35 @@ cnfg_load = Par('file', command='loadConfigurations()')
 cnfg_load.title = 'Load'
 cnfg_load.dtype = 'multi'
 cnfg_load.ext = '*.kkb'
+'''
 
 g0 = Group('Configuration')
-g0.add(cnfg_save, cnfg_load)
+g0.add(cnfg_save, cnfg_save_btn, cnfg_load, cnfg_load_btn)
+g0.numColumns = 2
 
 configurations = []
+configurations_apply = []
 for i in xrange(5):
     config = Par('string')
     config.title = '(%i)' % (i + 1)
     config.enabled = False
     configurations.append(config)
+    
     g0.add(config)
+    
+    exec("config_apply%i = Act('applyConfiguration(%i)', 'apply')" % (i, i))
+    exec("g0.add(config_apply%i)" % i)
 
-btnRunConfigurations = Act('runConfigurations()', 'Run Configurations')
-g0.add(btnRunConfigurations)
+cnfg_run_btn = Act('runConfigurations()', 'Run Configurations')
 
 def saveConfiguration():    
-    fh = open(cnfg_save.value, 'w')
+    file = open_file_dialog(type = SAVE_TYPE, ext = ['*.kkb'])
+    try:
+        fh = open(file, 'w')
+    except:
+        print 'not saved'
+        return
+    
     try:
         p = Pickler(fh)
         
@@ -320,28 +382,81 @@ def saveConfiguration():
         # content
         model = ConfigurationModel()
         for att in dir(model):
-            p.dump(getattr(model, att))
+            att_value = getattr(model, att)
+            if (att.find('_') != 0) and ('instancemethod' not in str(type(att_value))):
+                p.dump(att)
+                p.dump(att_value)
         
+        cnfg_save.value = file
         print 'saved'
         
     finally:
         fh.close()
     
-def loadConfigurations():    
+def loadConfigurations():
+    fileList = open_file_dialog(type = MULTI_TYPE, ext = ['*.kkb'])
+    if not fileList:
+        return
+
+    files = '';
+    for f in fileList:
+         files += f + ';'
+
+    cnfg_load.value = files
     for item in configurations:
         item.value = ''
-    
-    if cnfg_load.value:
-        index = 0
-        for path in filter(None, cnfg_load.value.split(';')):
+
+    index = 0
+    for path in filter(None, cnfg_load.value.split(';')):
+        fh = open(path, 'r')
+        try:
+            p = Unpickler(fh)
+            if p.load() != 'KKB':
+                print 'ERROR:', os.path.basename(path)
+            else:
+                model = ConfigurationModel()
+                for att in dir(model):
+                    att_value = getattr(model, att)
+                    if (att.find('_') != 0) and ('instancemethod' not in str(type(att_value))):
+                        if p.load() != att:
+                            print 'FORMAT ERROR:', os.path.basename(path)
+                            break
+                            
+                        setattr(model, att, p.load())
+                else:
+                    if index < len(configurations):
+                        configurations[index].value = os.path.basename(path)
+                        index += 1
+        finally:
+            fh.close()
+            
+def applyConfiguration(index):
+    file = configurations[index].value
+    if not file:
+        print 'no file selected'
+        return
+
+    index = 0
+    for path in filter(None, cnfg_load.value.split(';')):
+        if file == os.path.basename(path):
             fh = open(path, 'r')
             try:
                 p = Unpickler(fh)
                 if p.load() != 'KKB':
                     print 'ERROR:', os.path.basename(path)
-                elif index < len(configurations):
-                    configurations[index].value = os.path.basename(path)
-                    index += 1
+                else:
+                    model = ConfigurationModel()
+                    for att in dir(model):
+                        att_value = getattr(model, att)
+                        if (att.find('_') != 0) and ('instancemethod' not in str(type(att_value))):
+                            if p.load() != att:
+                                print 'FORMAT ERROR:', os.path.basename(path)
+                                break
+                                
+                            setattr(model, att, p.load())
+                    else:
+                        print 'apply:', os.path.basename(path)
+                        model.apply()
             finally:
                 fh.close()
 
@@ -354,12 +469,18 @@ def runConfigurations():
                 if p.load() != 'KKB':
                     print 'ERROR:', os.path.basename(path)
                 else:
-                    print os.path.basename(path)
                     model = ConfigurationModel()
                     for att in dir(model):
-                        setattr(model, att, p.load())
-                        
-                    startScan(model)
+                        att_value = getattr(model, att)
+                        if (att.find('_') != 0) and ('instancemethod' not in str(type(att_value))):
+                            if p.load() != att:
+                                print 'FORMAT ERROR:', os.path.basename(path)
+                                break
+                                
+                            setattr(model, att, p.load())
+                    else:
+                        print 'run:', os.path.basename(path)
+                        startScan(model)
             finally:
                 fh.close()
 
@@ -428,10 +549,15 @@ def setTemplate():
         template = steps_templates_dict[steps_templates.value]
         
         scan_mode.value = template[0]
+        if template[1] == 'logscale':
+            logscale_position.value = True
+        elif template[1] == 'linear':
+            logscale_position.value = False
+
         setScanMode()
         
-        for i in xrange(len(template) - 1):
-            templateItem = template[i + 1]
+        for i in xrange(len(template) - 2):
+            templateItem = template[i + 2]
             stepInfoItem = stepInfo[i]
                 
             stepInfoItem['enabled'   ].value   = True
@@ -444,7 +570,7 @@ def setTemplate():
             stepInfoItem['maxTime'   ].enabled = scan_min_time.enabled
             stepInfoItem['maxTime'   ].value   = templateItem[3]
             
-        for i in xrange(len(template) - 1, len(stepInfo)):
+        for i in xrange(len(template) - 2, len(stepInfo)):
             stepInfoItem = stepInfo[i]
                         
             stepInfoItem['enabled'   ].value   = False
@@ -1094,10 +1220,20 @@ class ConfigurationModel:
     def __init__(self):
         self.scanVariable = str(scan_variable.value)
         self.scanVariable = self.scanVariable[:self.scanVariable.find(' ')]
+        
         self.crystal      = str(crystal_name.value)
         self.mode         = str(scan_mode.value)
         
         self.scan = getScan()
+        self.scan_reference = scan_reference.value
+        
+        self.logscale = logscale_position.value
+        self.stepInfo = []
+        for step in stepInfo:
+            d = dict()
+            for key in step.keys():
+                d[key] = step[key].value
+            self.stepInfo.append(d);
 
         self.user_name  = str(user_name.value)
         self.user_email = str(user_email.value)
@@ -1120,3 +1256,44 @@ class ConfigurationModel:
         # load sample positions
         self.sam_position = str(scan_sam_position.value)
         self.min_time     = int(scan_min_time.value)
+        
+    def apply(self):
+        for option in scan_variable.options:
+            if self.scanVariable == option[:option.find(' ')]:
+                scan_variable.value = option
+
+        crystal_name.value  = self.crystal
+        scan_mode.value     = self.mode
+
+        logscale_position.value = self.logscale 
+        scan_reference.value    = self.scan_reference
+        i = 0
+        for step in self.stepInfo:
+            for key in step.keys():
+                stepInfo[i][key].value = step[key]
+            setEnabled(i)
+            i += 1
+            
+        setScanMode()
+
+        user_name.value  = self.user_name
+        user_email.value = self.user_email
+        
+        sample_name.value        = self.sample_name
+        sample_description.value = self.sample_description
+        sample_thickness.value   = self.sample_thickness
+        
+        # vertical/horizontal pre-slit
+        pss_ss1vg.value = self.ss1vg
+        pss_ss1vo.value = self.ss1vo
+        pss_ss1hg.value = self.ss1hg
+        pss_ss1ho.value = self.ss1ho
+        # vertical/horizontal post-slit
+        pss_ss2vg.value = self.ss2vg
+        pss_ss2vo.value = self.ss2vo
+        pss_ss2hg.value = self.ss2hg
+        pss_ss2ho.value = self.ss2ho
+        
+        # load sample positions
+        scan_sam_position.value = self.sam_position
+        scan_min_time.value     = self.min_time
