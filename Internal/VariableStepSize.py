@@ -55,7 +55,7 @@ def open_file_dialog(type = SWT.SINGLE, ext = ['*.*']):
 
 reference_templates_dict = {}
 reference_templates_dict['Si111'] = 179.6142
-reference_templates_dict['Si311'] =  -0.02563
+reference_templates_dict['Si311'] =  -0.02575
 
 steps_templates_dict = {}
 steps_templates_dict['Si111: Comprehensive Scan'] = [
@@ -67,6 +67,16 @@ steps_templates_dict['Si111: Comprehensive Scan'] = [
     [10, 1.2e-3,  1000, 1200],
     [16, 2.4e-3,  1000, 1200],
     [60, 6.0e-3,  1000, 1200]]
+
+steps_templates_dict['Si111: Comprehensive Rheo Yacine Scan'] = [
+    'count_roi', 'logscale',
+    [33, 6.0e-5,  1000, 1200],
+    [73, 8.0e-5,  1000, 1200]]
+
+steps_templates_dict['Si111: Rapid Intensity Scan Rheo Yacine Scan'] = [
+    'time', 'logscale',
+    [17, 1.20e-4,  1, 1200],
+    [30, 2.0e-4,  20, 1200]]
 
 steps_templates_dict['Si111: CHECK INTESITY MAIN TRANS BACKGROUND'] = [
     'count_roi', 'linear',
@@ -112,6 +122,13 @@ steps_templates_dict['Si311: Logarithmic Scan'] = [
     'count_roi', 'logscale',
     [31, 2e-5,    1000, 1200],
     [60, 2.5e-5,  1000, 1200]]
+
+steps_templates_dict[' Si311: Logarithmic Radlinski Scan'] = [
+    'count_roi', 'logscale',
+    [39, 4e-5,  1000, 1200],
+    [23, 10e-5, 1000, 1200],
+    [5, 0.004,  1000, 1200]]
+
 steps_templates_dict['Si311: Comprehensive Scan'] = [
     'count_roi', 'linear',
     [21, 1.3e-5, 50000, 1200],
@@ -276,7 +293,7 @@ for key in reference_templates_dict.keys():
 scan_mode = Par('string', 'count_roi', options = ['count_roi', 'time'], command='setScanMode()')
 scan_mode.title = 'Mode'
 
-scan_min_time = Par('int', '20')
+scan_min_time = Par('int', '5')
 scan_min_time.title = 'Min Time (sec)'
 
 crystal = str(crystal_name.value)
@@ -671,29 +688,31 @@ def startScan(configModel):
     crystal      = configModel.crystal
     mode         = configModel.mode
 
-    empLevel = 0.76
-    bkgLevel = 0.98757
     
     MainDeadTime    = 1.08E-6
     TransDeadTime   = 1.08E-6
         
     if 'Si111' in crystal:
+        empLevel = 0.49
+        bkgLevel = 0.48
         dOmega = 2.3E-6
         gDQv   = 0.0586
         gDQh   = 0
         
         wavelength       = 4.74
         TransmissionTube = 10
-        TransBackground  = 75.0     # counts per second
+        TransBackground  = 73.6     # counts per second
     
     elif 'Si311' in crystal:
-        dOmega = 1.2345E-6
-        gDQv   = 1.2345
+        empLevel = 0.34
+        bkgLevel = 0.333
+        dOmega = 4.6E-7
+        gDQv   = 0.117
         gDQh   = 0
         
         wavelength       = 2.37
         TransmissionTube = 9
-        TransBackground  = 12345.0  # counts per second
+        TransBackground  = 171.4  # counts per second
         
     else:
         print 'selected crystal is invalid'
@@ -829,6 +848,7 @@ def startScan(configModel):
             time.sleep(1)
 
         sics.execute('newfile HISTOGRAM_XYT')
+        #sics.execute('autosave 60') # 60 seconds
         time.sleep(1)
         
         sicsController = sics.getSicsController()
@@ -908,6 +928,7 @@ def startScan(configModel):
             print 'histmem done'
             
         sics.execute('newfile clear')
+        #sics.execute('autosave 0') # disable autosave
         
         # Get output filename
         filenameController = sicsController.findDeviceController('datafilename')

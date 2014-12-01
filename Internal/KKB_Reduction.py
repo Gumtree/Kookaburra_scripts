@@ -275,9 +275,12 @@ Group('Plot Range').add(plotXMin, plotXMax, plotYMin, plotYMax, plotXLog, plotYL
 
 # determine background level
 
-bkgLevelGetFile = Par('string', '')
-bkgLevelGetFile.title = 'File'
-bkgLevelGetFile.enabled = False
+bkgLevelGetFiles = Par('string', '')
+bkgLevelGetFiles.title = 'File'
+bkgLevelGetFilesTakeBtn = Act('bkgFilesTake()', 'Take From Selection')
+
+bkgLevelGetIgnorePts = Par('string', '')
+bkgLevelGetIgnorePts.title = 'Ignore Data Points' 
 
 bkgLevelGetMcr = Par('string', '')
 bkgLevelGetMcr.title = 'MCR'
@@ -291,60 +294,123 @@ bkgLevelGetNLevel = Par('string', '')
 bkgLevelGetNLevel.title = 'Normalised BKG Level'
 bkgLevelGetNLevel.enabled = False
 
-bkgLevelGetBtn = Act('bkgLevelGet()', 'Take From Selection')
+bkgLevelGetCalcBtn = Act('bkgLevelGet()', 'Determine BKG Level')
 
-Group('Determine Background Level').add(bkgLevelGetFile, bkgLevelGetMcr, bkgLevelGetLevel, bkgLevelGetNLevel, bkgLevelGetBtn)
+Group('Background Level').add(bkgLevelGetFiles, bkgLevelGetFilesTakeBtn, bkgLevelGetIgnorePts, bkgLevelGetMcr, bkgLevelGetLevel, bkgLevelGetNLevel, bkgLevelGetCalcBtn)
 
-def bkgLevelGet():
-    datasets = __DATASOURCE__.getSelectedDatasets()
-    if len(datasets) == 1:
-        for sds in datasets:
-            basename = os.path.basename(str(sds.getLocation()))
-            basename = basename[:basename.find('.nx.hdf')]
-            
-            bkgLevelGetFile.value = basename
-            
-            
-            ds = Dataset(str(sds.getLocation()))
-            
-            # get times
-            ctTimes      = list(ds['entry1/instrument/detector/time'])
-            mainDeadTime = TryGet(ds, ['entry1/instrument/detector/MainDeadTime'], MainDeadTime.value, MainDeadTime_Patching.value)
-            
-            # sum selected tubes
-            data = zeros(len(ctTimes))
-            for tid in [0, 1, 2, 3, 4]:
-                data[:] += DeadtimeCorrection(ds.hmm, tid, mainDeadTime, ctTimes)
-            detCts = list(data)
-            monCts = list(ds.bm1_counts)
-            
-            # for average
-            mcrS = 0.0 
-            rawS = 0.0
-            nrmS = 0.0
-            
-            dMCR = defaultMCR.value
-            for i in xrange(len(ctTimes)):
-                ctTime = ctTimes[i]
-                       
-                detCts[i] = detCts[i] / ctTime
-                monCts[i] = monCts[i] / ctTime
+def bkgFilesTake():
+    fns = None
+    for sds in __DATASOURCE__.getSelectedDatasets():
+        basename = os.path.basename(str(sds.getLocation()))
+        basename = basename[:basename.find('.nx.hdf')]
 
-                mcrS += monCts[i]
-                rawS += detCts[i]
-
-                detCts[i] = detCts[i] * dMCR / monCts[i]
-                
-                nrmS += detCts[i]
-                
-            invN = 1.0 / len(ctTimes)
-            bkgLevelGetMcr.value    = mcrS * invN
-            bkgLevelGetLevel.value  = rawS * invN
-            bkgLevelGetNLevel.value = nrmS * invN
-
-
+        if fns is None:
+            fns = basename
+        else:
+            fns += ', ' + basename
+            
+    if fns is None:
+        bkgLevelGetFiles.value = ''
     else:
-        print 'please select one file'
+        bkgLevelGetFiles.value = fns
+        
+def bkgLevelGet():
+    
+    # find bkg files
+    bkgFileList = filter(None, str(bkgLevelGetFiles.value).split(','))
+    for i in xrange(0, len(bkgFileList)):
+        bkgFileList[i] = bkgFileList[i].strip()
+    
+    bkgFilePaths = []
+    if len(bkgFileList) != 0:
+        for bkgFile in bkgFileList:
+            found = False
+            
+            for ds in __DATASOURCE__.getDatasetList():
+                dsLocation = str(ds.getLocation())
+                if bkgFile in dsLocation:
+                    if not found:
+                        bkgFilePaths.append(dsLocation)
+                        found = True
+                    else:
+                        print 'Warning: "%s" has multiple matches' % bkgFile
+                        break
+                    
+            if not found:
+                print 'Warning: "%s" was not found' % bkgFile
+                
+    if len(bkgFilePaths) == 0:
+        print 'Warning: no Empty Scans were selected'
+        return
+    
+    if len(bkgFilePaths) > 1:
+        print 'Warning: more than one background file is not support (yet)'
+        return
+    
+    ds = Dataset(str(bkgFilePaths[0]))
+    
+    # get times
+    ctTimes      = list(ds['entry1/instrument/detector/time'])
+    mainDeadTime = TryGet(ds, ['entry1/instrument/detector/MainDeadTime'], MainDeadTime.value, MainDeadTime_Patching.value)
+    
+    
+    bkgLevelGetMcr
+    
+    
+    # sum selected tubes
+    data = zeros(len(ctTimes))
+    for tid in [0, 1, 2, 3, 4]:
+        if ds.hmm.ndim == 4:
+            data[:] += ds.hmm[:, 0, :, tid].sum(0) # hmm
+        else:
+            data[:] += ds.hmm[:, :, tid].sum(0)    # hmm_xy    
+        
+    DeadtimeCorrection(data, mainDeadTime, ctTimes)
+
+    detCts = list(data)
+    monCts = list(ds.bm1_counts)
+    
+    indices = GetToKeepFilter(len(ctTimes), bkgLevelGetIgnorePts.value)
+    if indices is not None:
+        ctTimes = [ctTimes[i] for i in indices]
+        detCts  = [detCts[i]  for i in indices]
+        monCts  = [monCts[i]  for i in indices]
+    
+    # for average
+    mcrS = 0.0 
+    rawS = 0.0
+    nrmS = 0.0
+    
+    dMCR = defaultMCR.value
+    for i in xrange(len(ctTimes)):
+        ctTime = ctTimes[i]
+               
+        detCts[i] = detCts[i] / ctTime
+        
+        if not bm1rate_Patching.value:
+            monCts[i] = monCts[i] / ctTime
+        else:
+            monCts[i] = float(bm1rate.value)
+        
+        mcrS += monCts[i]
+        rawS += detCts[i]
+
+        detCts[i] = detCts[i] * dMCR / monCts[i]
+        
+        nrmS += detCts[i]
+        
+    if len(ctTimes) > 0:
+        invN = 1.0 / len(ctTimes)
+    else:
+        invN = 0.0
+        
+    mcrS *= invN
+    rawS *= invN
+    nrmS *= invN
+
+    bkgLevelGetMcr.value    = mcrS
+    bkgLevelGetLevel.value  = rawS
+    bkgLevelGetNLevel.value = nrmS
 
 
 '''
@@ -419,34 +485,37 @@ def TryGet(ds, pathList, default, forceDefault=False):
         
     return default
 
-def RemoveIgnoredRanges(ds, ignorePtsStr):
-    
+def GetToKeepFilter(maxCount, ignorePtsStr):
     ignoredRanges = filter(None, str(ignorePtsStr).split(','))
-    if len(ignoredRanges) > 0:
+    if len(ignoredRanges) < 1:
+        return None
+    
+    toKeep = range(0, maxCount)
+    for ignoredRange in ignoredRanges:
+        rangeItems = ignoredRange.split('-')
+        if ('' in rangeItems) or (len(rangeItems) < 1) or (len(rangeItems) > 2):
+            raise Exception('format in "ignore data points" is incorrect')
         
-        angleCount = len(ds.Angle)
-        toKeep = range(0, angleCount)
+        # from 1 based to 0 based
+        start = int(rangeItems[0]) - 1
         
-        for ignoredRange in ignoredRanges:
-            rangeItems = ignoredRange.split('-')
-            if ('' in rangeItems) or (len(rangeItems) < 1) or (len(rangeItems) > 2):
-                raise Exception('format in "ignore data points" is incorrect')
-            
-            # from 1 based to 0 based
-            start = int(rangeItems[0]) - 1
-            
-            if len(rangeItems) == 1:
-                end = start + 1
-            elif rangeItems[1]== '*':
-                end = angleCount
-            else:
-                end = float(rangeItems[1])
-            
-            for point in xrange(start, end):
-                if point in toKeep:
-                    toKeep.remove(point)
-                    
-        ds.KeepOnly(toKeep)
+        if len(rangeItems) == 1:
+            end = start + 1
+        elif rangeItems[1]== '*':
+            end = maxCount
+        else:
+            end = float(rangeItems[1])
+        
+        for point in xrange(start, end):
+            if point in toKeep:
+                toKeep.remove(point)
+                
+    return toKeep
+
+def RemoveIgnoredRanges(ds, ignorePtsStr):
+    indices = GetToKeepFilter(len(ds.Angle), ignorePtsStr)
+    if indices is not None:
+        ds.KeepOnly(indices)
         
     return ds
         
@@ -705,7 +774,7 @@ class ReductionDataset:
 
         self.TWideCts = sumTransCts / sumMonCts
         
-        print "TWide: ", self.TWideCts
+        print "IWide: ", self.TWideCts
         return self.TWideCts
 
     def CorrectData(self, emp):
@@ -732,7 +801,17 @@ class ReductionDataset:
         print 'emp.PeakVal', emp.PeakVal
         
         scale = 1.0 / (self.TransWide * self.Thick * dOmega * emp.PeakVal)
+        scale_lela = (self.TransWide * self.Thick * dOmega) #lela
+        
+        
+        # lela: CHECK: this emp.PeakVal should be the one of the empty CELL???
+        
+        print 'scale', scale # lela
+        print 'scale_lela', scale_lela # lela
 
+
+        
+        
         maxq = emp.Qvals[-1]
         for i in xrange(len(self.Qvals)):
             wq = self.Qvals[i]
@@ -760,7 +839,7 @@ class ReductionDataset:
             fp.write("LABEL: " + self.Label + LE)
             try:
                 fp.write("EMP FILES: " + self.Emp.Filename.replace(';',',') + LE)
-                fp.write("Ds = %g cm ; Twide = %g ; Trock = %g" % (self.Thick, self.TransWide, self.TransRock) + LE)
+                fp.write("Ds = %g cm ; Twide = %g ; Trock = %g ; Trock = %g" % (self.Thick, self.TransWide, self.TransRock, self.TransRock / self.TransWide) + LE) #lela
                 fp.write("SAM PEAK ANGLE: %g ; EMP PEAK ANGLE: %g" % (self.PeakAng, self.Emp.PeakAng) + LE)
                 fp.write("EMP LEVEL: %g ; BKG LEVEL: %g" % (self.empLevel, self.Emp.bkgLevel) + LE)
             except:
@@ -842,6 +921,9 @@ def __run_script__(fns):
     global Plot3
     
     Plot1.clear()
+    Plot2.clear() #lela
+    Plot3.clear() #lela
+    
     
     # find empty files
     emFileList = filter(None, str(empFiles.value).split(','))
@@ -917,7 +999,7 @@ def __run_script__(fns):
     ds.Save(path + filename + '-cor.txt')
     PlotDataset(Plot1, ds, 'Cor')
         
-    Plot1.title   = 'Scattering'
+    Plot1.title   = 'Main detector' #lela
     Plot1.x_label = 'q (1/Angstrom)'
     Plot1.y_label = 'intensity (counts/sec)'
     
@@ -932,7 +1014,7 @@ def __run_script__(fns):
     PlotTransmissionDataset(Plot2, ds, 'SAM')
     PlotTransmissionDataset(Plot2, em, 'EMP')
     
-    Plot2.title   = 'Transmission'
+    Plot2.title   = 'Transmission Detector' #lela
     Plot2.x_label = 'q (1/Angstrom)'
     Plot2.y_label = 'intensity (counts/sec)'
         
