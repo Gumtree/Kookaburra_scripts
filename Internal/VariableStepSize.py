@@ -73,10 +73,20 @@ steps_templates_dict['Si111: Comprehensive Rheo Yacine Scan'] = [
     [33, 6.0e-5,  1000, 1200],
     [73, 8.0e-5,  1000, 1200]]
 
+steps_templates_dict[' Si111: Comprehensive Duncan Scan'] = [
+    'count_roi', 'logscale',
+    [21, 2.0e-5,  1000, 10],
+    [40, 5.0e-5,  1000, 1200]]
+
 steps_templates_dict['Si111: Rapid Intensity Scan Rheo Yacine Scan'] = [
     'time', 'logscale',
     [17, 1.20e-4,  1, 1200],
     [30, 2.0e-4,  20, 1200]]
+
+steps_templates_dict['Si111: KKB cell hydrogel'] = [
+    'count_roi', 'logscale',
+    [33, 8.0e-5,  1000, 1200],
+    [35, 3e-4,  1000, 1200]]
 
 steps_templates_dict['Si111: CHECK INTESITY MAIN TRANS BACKGROUND'] = [
     'count_roi', 'linear',
@@ -821,11 +831,11 @@ def startScan(configModel):
         samz_list = []
         
         pos2samz = {}
-        pos2samz[1] =  33.5
-        pos2samz[2] = 178.5
-        pos2samz[3] = 323.5
-        pos2samz[4] = 468.5
-        pos2samz[5] = 613.5
+        pos2samz[1] =  77.0 #33.5
+        pos2samz[2] = 223.0 #178.5
+        pos2samz[3] = 368.0 #323.5
+        pos2samz[4] = 598.1 #468.5
+        pos2samz[5] = 658.0 #613.5
 
         for range in filter(None, sam_positions.split(',')):
             rangeItems = range.split('-')
@@ -894,9 +904,10 @@ def startScan(configModel):
                     while not sicsController.getServerStatus().equals(ServerStatus.EAGER_TO_EXECUTE):
                         try:
                             count_roi = int(sicsext.runCommand('hmm configure num_events_filled_to_count_roi'))
-                            print count_roi
+#                            print count_roi
                             
                             if count_roi > preset:
+                                print count_roi
                                 print 'reached desired count_roi'
                                 sics.execute('histmem pause')
                                 time.sleep(1)

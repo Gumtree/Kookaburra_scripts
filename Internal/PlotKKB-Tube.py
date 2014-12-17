@@ -46,6 +46,7 @@ g1.add(check_tube9, check_tube10)
 
 scan_variable = Par('string', 'm2om [deg]', options = [
     'pmom [deg]', 'pmchi [deg]', 'm1om [deg]', 'm1chi [deg]', 'm1x [mm]', 'm2om [deg]', 'm2chi [deg]', 'm2x [mm]', 'm2y [mm]', 'mdet [mm]',
+    'samz [mm]',
     'ss1u [mm]', 'ss1d [mm]', 'ss1l [mm]', 'ss1r [mm]',
     'ss2u [mm]', 'ss2d [mm]', 'ss2l [mm]', 'ss2r [mm]',
     'ss1hg [mm]', 'ss1ho [mm]', 'ss1vg [mm]', 'ss1vo [mm]',
@@ -130,6 +131,7 @@ def proc_fn(path):
     ds.__iDictionary__.addEntry('mdet', 'entry1/instrument/crystal/mdet')
     ds.__iDictionary__.addEntry('pmom', 'entry1/instrument/crystal/pmom')
     ds.__iDictionary__.addEntry('pmchi', 'entry1/instrument/crystal/pmchi')
+    ds.__iDictionary__.addEntry('samz', 'entry1/sample/samz')
     ds.__iDictionary__.addEntry('ss1u', 'entry1/instrument/slits/ss1u')
     ds.__iDictionary__.addEntry('ss1d', 'entry1/instrument/slits/ss1d')
     ds.__iDictionary__.addEntry('ss1r', 'entry1/instrument/slits/ss1r')
