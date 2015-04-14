@@ -65,7 +65,7 @@ TransDeadTime_FromFile = Par('float', 'NaN')
 TransDeadTime_FromFile.title = ''
 TransDeadTime_FromFile.enabled = False
 
-bkgLevel = Par('float', '38.5')
+bkgLevel = Par('float', '0.277')
 bkgLevel.title = 'Normalised BKG Level'
 bkgLevel.enabled = False
 bkgLevel_Patching = Par('bool', False, command='bkgLevel.enabled = bkgLevel_Patching.value')
@@ -77,7 +77,8 @@ bkgLevel_FromFile.enabled = False
 TransBkg = Par('float', '75')
 TransBkg.title = 'Trans BKG Level'
 TransBkg.enabled = False
-TransBkg_Patching = Par('bool', False, command='TransBkg.enabled = TransBkg_Patching.value')
+TransBkg_Patching = Par('bool', False, 
+                        command='TransBkg.enabled = TransBkg_Patching.value')
 TransBkg_Patching.title = ''
 TransBkg_FromFile = Par('float', 'NaN')
 TransBkg_FromFile.title = ''
@@ -101,7 +102,7 @@ gDQv_FromFile = Par('float', 'NaN')
 gDQv_FromFile.title = ''
 gDQv_FromFile.enabled = False
 
-bm1rate = Par('float', '52.0')
+bm1rate = Par('float', '1.0')
 bm1rate.title = 'bm1 Count Rate (counts/s)'
 bm1rate.enabled = False
 bm1rate_Patching = Par('bool', False, command='bm1rate.enabled = bm1rate_Patching.value')
@@ -167,7 +168,7 @@ def parametersShow():
     else:
         print 'please select one file'
 
-defaultMCR = Par('float', '5000')
+defaultMCR = Par('float', '1')
 defaultMCR.title = 'Default MCR'
 
 TWideMarker = Par('float', '3e-3')
@@ -190,7 +191,7 @@ empIgnorePts.title = 'Ignore Data Points'
 
 empLevel = Par('float', '0')
 empLevel.title = 'Empty Level'
-empLevel_SampleCount = Par('int', '10')
+empLevel_SampleCount = Par('int', '5')
 empLevel_SampleCount.title = 'Tail Points'
 empLevelCalcBtn = Act('empLevelCalc()', 'Determine Empty Level')
 
@@ -257,7 +258,7 @@ def empLevelCalc():
     
 plotXMin = Par('float', '3e-5')
 plotXMax = Par('float', '0.02')
-plotYMin = Par('float', '100')
+plotYMin = Par('float', '0.1')
 plotYMax = Par('float', '1e7')
 
 plotXMin.title = '                                 x min'
@@ -282,6 +283,9 @@ bkgLevelGetFilesTakeBtn = Act('bkgFilesTake()', 'Take From Selection')
 bkgLevelGetIgnorePts = Par('string', '')
 bkgLevelGetIgnorePts.title = 'Ignore Data Points' 
 
+bkgLevelGetError = Par('float', '5.0')
+bkgLevelGetError.title = 'Error (%)' 
+
 bkgLevelGetMcr = Par('string', '')
 bkgLevelGetMcr.title = 'MCR'
 bkgLevelGetMcr.enabled = False
@@ -296,7 +300,7 @@ bkgLevelGetNLevel.enabled = False
 
 bkgLevelGetCalcBtn = Act('bkgLevelGet()', 'Determine BKG Level')
 
-Group('Background Level').add(bkgLevelGetFiles, bkgLevelGetFilesTakeBtn, bkgLevelGetIgnorePts, bkgLevelGetMcr, bkgLevelGetLevel, bkgLevelGetNLevel, bkgLevelGetCalcBtn)
+Group('Background Level').add(bkgLevelGetFiles, bkgLevelGetFilesTakeBtn, bkgLevelGetIgnorePts, bkgLevelGetError, bkgLevelGetMcr, bkgLevelGetLevel, bkgLevelGetNLevel, bkgLevelGetCalcBtn)
 
 def bkgFilesTake():
     fns = None
@@ -353,10 +357,6 @@ def bkgLevelGet():
     ctTimes      = list(ds['entry1/instrument/detector/time'])
     mainDeadTime = TryGet(ds, ['entry1/instrument/detector/MainDeadTime'], MainDeadTime.value, MainDeadTime_Patching.value)
     
-    
-    bkgLevelGetMcr
-    
-    
     # sum selected tubes
     data = zeros(len(ctTimes))
     for tid in [0, 1, 2, 3, 4]:
@@ -375,7 +375,18 @@ def bkgLevelGet():
         ctTimes = [ctTimes[i] for i in indices]
         detCts  = [detCts[i]  for i in indices]
         monCts  = [monCts[i]  for i in indices]
-    
+        
+    # only keep counts with nonzero time
+    indices = [i for i, t in enumerate(ctTimes) if t != 0]
+    if indices is not None:
+        ctTimes = [ctTimes[i] for i in indices]
+        detCts  = [detCts[i]  for i in indices]
+        monCts  = [monCts[i]  for i in indices]
+
+    # determine error
+    totalDetCts = sum(detCts)
+    bkgLevelGetError.value = sqrt(totalDetCts) / totalDetCts * 100.0
+
     # for average
     mcrS = 0.0 
     rawS = 0.0
@@ -436,18 +447,22 @@ def DeadtimeCorrection(counts, deadTime, countTimes):
     # x1 = x0 - (x0 - y*e^cx0) / (1 - cx0)
         
     for i in xrange(len(counts)):
-        dtt = deadTime / countTimes[i]
-        
-        y = counts[i]
-        x = y       # initial value
-        
-        # 4 iterations
-        for j in xrange(4):
-            x = x - (x - y*exp(dtt * x)) / (1 - dtt * x)
+        if countTimes[i] == 0:
+            counts[i] = 0
             
-        counts[i] = x
-
-        #tube[i] = tube[i] * (1 / (1.0 - tube[i] * deadTime / countTimes[i]))
+        else:
+            dtt = deadTime / countTimes[i]
+            
+            y = counts[i]
+            x = y       # initial value
+            
+            # 4 iterations
+            for j in xrange(4):
+                x = x - (x - y*exp(dtt * x)) / (1 - dtt * x)
+                
+            counts[i] = x
+    
+            #tube[i] = tube[i] * (1 / (1.0 - tube[i] * deadTime / countTimes[i]))
 
 def interp(q, Q, I):
     
@@ -808,9 +823,6 @@ class ReductionDataset:
         
         print 'scale', scale # lela
         print 'scale_lela', scale_lela # lela
-
-
-        
         
         maxq = emp.Qvals[-1]
         for i in xrange(len(self.Qvals)):
@@ -821,12 +833,14 @@ class ReductionDataset:
             else:
                 tempI   = self.empLevel
                 tempErr = 0
+
+            bkgLevelError = float(bkgLevelGetError.value) / 100.0 # 100 -> 1.00
                 
             detCts = self.DetCts[i] - self.bkgLevel
             empCts = tempI          - self.bkgLevel
 
             self.DetCts[i]    = detCts - self.TransRock * empCts
-            self.ErrDetCts[i] = sqrt(self.ErrDetCts[i]**2 + (self.TransRock * tempErr)**2)
+            self.ErrDetCts[i] = sqrt(self.ErrDetCts[i]**2 + (self.TransRock * tempErr)**2 + (bkgLevelError*self.bkgLevel)**2)
 
             self.DetCts[i]    *= scale
             self.ErrDetCts[i] *= scale
@@ -839,7 +853,7 @@ class ReductionDataset:
             fp.write("LABEL: " + self.Label + LE)
             try:
                 fp.write("EMP FILES: " + self.Emp.Filename.replace(';',',') + LE)
-                fp.write("Ds = %g cm ; Twide = %g ; Trock = %g ; Trock = %g" % (self.Thick, self.TransWide, self.TransRock, self.TransRock / self.TransWide) + LE) #lela
+                fp.write("Ds = %g cm ; Twide = %g ; Trock = %g ; Tsas = %g" % (self.Thick, self.TransWide, self.TransRock, self.TransRock / self.TransWide) + LE) #lela
                 fp.write("SAM PEAK ANGLE: %g ; EMP PEAK ANGLE: %g" % (self.PeakAng, self.Emp.PeakAng) + LE)
                 fp.write("EMP LEVEL: %g ; BKG LEVEL: %g" % (self.empLevel, self.Emp.bkgLevel) + LE)
             except:
