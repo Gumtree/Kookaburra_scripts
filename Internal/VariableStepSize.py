@@ -58,7 +58,7 @@ reference_templates_dict['Si111'] = 179.6142
 reference_templates_dict['Si311'] =  -0.02575
 
 steps_templates_dict = {}
-steps_templates_dict['Si111: Comprehensive Scan'] = [
+steps_templates_dict['Si111: Comprehensive Linear Scan'] = [
     'count_roi', 'linear',
     [33, 6.0e-5,  1000, 1200],
     [13, 1.2e-4,  1000, 1200],
@@ -73,10 +73,22 @@ steps_templates_dict['Si111: Comprehensive Rheo Yacine Scan'] = [
     [33, 6.0e-5,  1000, 1200],
     [73, 8.0e-5,  1000, 1200]]
 
-steps_templates_dict[' Si111: Comprehensive Duncan Scan'] = [
+steps_templates_dict[' Si111: Logarithmic Sakuvros Scan'] = [
+    'count_roi', 'logscale',
+    [33, 6.0e-5,  1000, 1200],
+    [33, 2.0e-4,  1000, 1200]]
+
+steps_templates_dict['Si111: Comprehensive Duncan Scan'] = [
     'count_roi', 'logscale',
     [21, 2.0e-5,  1000, 10],
     [40, 5.0e-5,  1000, 1200]]
+
+steps_templates_dict['Si311: DJM full Scan'] = [
+    'count_roi', 'logscale',
+    [21, 2.0e-5,  1000, 10],
+    [11, 4.1e-5,  1000, 1200],
+    [15, 1.0e-4,  1000, 1200],
+    [20, 3.85e-4,  1000, 1200]]
 
 steps_templates_dict['Si111: Rapid Intensity Scan Rheo Yacine Scan'] = [
     'time', 'logscale',
@@ -133,13 +145,18 @@ steps_templates_dict['Si311: Logarithmic Scan'] = [
     [31, 2e-5,    1000, 1200],
     [60, 2.5e-5,  1000, 1200]]
 
-steps_templates_dict[' Si311: Logarithmic Radlinski Scan'] = [
+steps_templates_dict['Si311: Logarithmic Radlinski Scan'] = [
     'count_roi', 'logscale',
     [39, 4e-5,  1000, 1200],
     [23, 10e-5, 1000, 1200],
     [5, 0.004,  1000, 1200]]
 
-steps_templates_dict['Si311: Comprehensive Scan'] = [
+steps_templates_dict[' Si311: Logarithmic Sakuvros Scan'] = [
+    'count_roi', 'logscale',
+    [80, 2e-5,  1000, 1200],
+    [29, 1e-4,  1000, 1200]]
+
+steps_templates_dict['Si311: Comprehensive Linear Scan'] = [
     'count_roi', 'linear',
     [21, 1.3e-5, 50000, 1200],
     [13, 6.0e-5,  1000, 1200],
@@ -319,10 +336,10 @@ for key in steps_templates_dict.keys():
         steps_templates.value = key
         break
 
-scan_sam_position = Par('string', 'fixed', options = ['fixed', '1', '2', '3', '4', '5'])
+scan_sam_position = Par('string', 'fixed', options = ['fixed', '-----', '1', '2', '3', '4', '5', '-----', '1 top', '1 bottom', '2 top', '2 bottom', '3 top', '3 bottom', '4 top', '4 bottom', '5 top', '5 bottom', ])
 scan_sam_position.title = 'Sample Position'
 
-logscale_position = Par('bool', False)
+logscale_position = Par('bool', True)
 logscale_position.title = 'Logarithmic Steps'
 
 g0 = Group('Scan')
@@ -709,15 +726,15 @@ def startScan(configModel):
     TransDeadTime   = 1.08E-6
         
     if 'Si111' in crystal:
-        empLevel = 0.49
-        bkgLevel = 0.48
+        empLevel = 0.3
+        bkgLevel = 0.277
         dOmega = 2.3E-6
         gDQv   = 0.0586
         gDQh   = 0
         
         wavelength       = 4.74
         TransmissionTube = 10
-        TransBackground  = 73.6     # counts per second
+        TransBackground  = 0     # counts per second
     
     elif 'Si311' in crystal:
         empLevel = 0.34
@@ -728,7 +745,7 @@ def startScan(configModel):
         
         wavelength       = 2.37
         TransmissionTube = 9
-        TransBackground  = 171.4  # counts per second
+        TransBackground  = 0  # counts per second
         
     else:
         print 'selected crystal is invalid'
@@ -780,6 +797,8 @@ def startScan(configModel):
     sics.execute('hset instrument/crystal/wavelength %g'  % wavelength)
     sics.execute('hset instrument/crystal/scan_variable ' + scanVariable);
     
+    sicsController = sics.getSicsController()
+        
     # slits
     def getSlitValues(gap, offset, a0, b0, aOpen, bOpen):
         
@@ -812,6 +831,24 @@ def startScan(configModel):
     (ss2r, ss2l) = getSlitValues(ss2hg, ss2ho, ss2r0, ss2l0, 35.0, -35.0)
     
     # apply slits
+    run = {}
+    run['ss1u'] = ss1u
+    run['ss1d'] = ss1d
+    run['ss1r'] = ss1r
+    run['ss1l'] = ss1l
+    
+    run['ss2u'] = ss2u
+    run['ss2d'] = ss2d
+    run['ss2r'] = ss2r
+    run['ss2l'] = ss2l
+    
+    sics.multiDrive(run)
+    
+    time.sleep(2)
+    while not sicsController.getServerStatus().equals(ServerStatus.EAGER_TO_EXECUTE):
+        time.sleep(0.1)
+    
+    '''
     sics.execute('run ss1u %.2f' % ss1u)
     sics.execute('run ss1d %.2f' % ss1d)
     sics.execute('run ss1r %.2f' % ss1r)
@@ -821,22 +858,37 @@ def startScan(configModel):
     sics.execute('run ss2d %.2f' % ss2d)
     sics.execute('run ss2r %.2f' % ss2r)
     sics.execute('run ss2l %.2f' % ss2l)
+    '''
     
     # load sample positions
     sam_positions = str(configModel.sam_position)
     
     if (len(sam_positions) == 0) or (sam_positions == 'fixed'):
-        samz_list = [0.0]
+        samz_list = [None]
     else:
         samz_list = []
         
         pos2samz = {}
-        pos2samz[1] =  77.0 #33.5
-        pos2samz[2] = 223.0 #178.5
-        pos2samz[3] = 368.0 #323.5
-        pos2samz[4] = 598.1 #468.5
-        pos2samz[5] = 658.0 #613.5
+        pos2samz['1'] =  33.5
+        pos2samz['2'] = 178.5
+        pos2samz['3'] = 323.5
+        pos2samz['4'] = 468.5
+        pos2samz['5'] = 613.5
+        
+        pos2samz['1 top'   ] =  17.4
+        pos2samz['1 bottom'] =  77.7
+        pos2samz['2 top'   ] = 163.5
+        pos2samz['2 bottom'] = 223.1
+        pos2samz['3 top'   ] = 308.0
+        pos2samz['3 bottom'] = 368.1
+        pos2samz['4 top'   ] = 454.1
+        pos2samz['4 bottom'] = 513.6
+        pos2samz['5 top'   ] = 598.2
+        pos2samz['5 bottom'] = 658.0
 
+        samz_list.append(pos2samz[sam_positions])
+
+        '''
         for range in filter(None, sam_positions.split(',')):
             rangeItems = range.split('-')
             if ('' in rangeItems) or (len(rangeItems) < 1) or (len(rangeItems) > 2):
@@ -847,9 +899,11 @@ def startScan(configModel):
             else:
                 for i in xrange(int(rangeItems[0]), int(rangeItems[1])+1):
                     samz_list.append(pos2samz[i])
-
+                    
         if len(samz_list) == 0:
             samz_list = [0.0]
+            
+        '''
 
     for samz in samz_list:
     
@@ -857,17 +911,27 @@ def startScan(configModel):
         time.sleep(3)
         sics.execute('histmem mode time')
     
-        if samz != 0.0:
+        if samz is not None:
             print 'run samz %.2f' % samz
             sics.execute('run samz %.2f' % samz)
             # sics.execute('prun samz 2' % samz) !!!
             time.sleep(1)
+            while not sicsController.getServerStatus().equals(ServerStatus.EAGER_TO_EXECUTE):
+                time.sleep(0.1)
 
         sics.execute('newfile HISTOGRAM_XYT')
         #sics.execute('autosave 60') # 60 seconds
         time.sleep(1)
         
-        sicsController = sics.getSicsController()
+        # start/stop hmm
+        if mode == 'count_roi':
+            sics.execute('histmem preset %i' % 1)
+            time.sleep(1)
+            sics.execute('histmem start')
+            time.sleep(5)
+            while not sicsController.getServerStatus().equals(ServerStatus.EAGER_TO_EXECUTE):
+                time.sleep(0.1)
+            sics.execute('histmem stop')
         
         print 'frames:', len(scan['angles'])
         for frame_index in xrange(len(scan['angles'])):
@@ -891,7 +955,6 @@ def startScan(configModel):
                     sics.execute('histmem preset %i' % preset)
                     
                 time.sleep(5)
-                
                 sics.execute('histmem start')
                 time.sleep(5)
                 
@@ -904,7 +967,7 @@ def startScan(configModel):
                     while not sicsController.getServerStatus().equals(ServerStatus.EAGER_TO_EXECUTE):
                         try:
                             count_roi = int(sicsext.runCommand('hmm configure num_events_filled_to_count_roi'))
-#                            print count_roi
+                            print count_roi
                             
                             if count_roi > preset:
                                 print count_roi
