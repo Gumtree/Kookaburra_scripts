@@ -1,7 +1,7 @@
 
 # Script control setup area
 # script info
-__script__.title = 'KKB Reduction 25.1.2016'
+__script__.title = 'KKB Plot and Reduction 25.1.2016'
 __script__.version = '2.0'
 
 
@@ -54,7 +54,7 @@ g0.add(combine_tube0, combine_tube1, combine_tube2, combine_tube3, combine_tube4
 use_beammonitor = Par('bool', True)
 use_beammonitor.title = 'Use Beam Monitor'
 
-defaultMCR = Par('float', '13000')
+defaultMCR = Par('float', '8500')
 defaultMCR.title = 'Default MCR'
 
 TWideMarker = Par('float', '2e-3')
@@ -192,12 +192,12 @@ def __run_script__(fns):
     Plot_START.add_y_marker(ds.SampleBkg, 6000, 'blue')
 
 
-reduceFileBtn = Act('reduceFile()', '*** REDUCE THE SAMPLE FILE ***')        
-reduceFileBtn.colspan = 1
+reduceSingleFileBtn = Act('reduceStitchedFiles()', '*** REDUCE SINGLE FILE ***')        
+reduceSingleFileBtn.colspan = 1
+reduceStitchedFilesBtn = Act('reduceStitchedFiles()', '*** REDUCE STITCHED FILES ***')        
+reduceStitchedFilesBtn.colspan = 1
 
-def reduceFile():
-    
-
+def reduceStitchedFiles():
     
     # Use the provided resources, please don't remove.
     global Plot1
@@ -257,11 +257,11 @@ def reduceFile():
         
     datasets = __DATASOURCE__.getSelectedDatasets()
     for sds in datasets:
-            ds = Dataset(str(sds.getLocation()))
-            SampleName_FromFile.value   = str(ds['entry1/sample/name'             ])
-            SampleDescr_FromFile.value  = str(ds['entry1/sample/description'      ])
-            Thickness_FromFile.value    = float(ds['entry1/sample/thickness'        ])
-            SampleBkg_FromFile.value    = float(ds['entry1/experiment/bkgLevel'     ])         
+        ds = Dataset(str(sds.getLocation()))
+        SampleName_FromFile.value   = str(ds['entry1/sample/name'             ])
+        SampleDescr_FromFile.value  = str(ds['entry1/sample/description'      ])
+        Thickness_FromFile.value    = float(ds['entry1/sample/thickness'        ])
+        SampleBkg_FromFile.value    = float(ds['entry1/experiment/bkgLevel'     ])         
         
     
     print 'sample:', ', '.join(dsFilePaths)
@@ -323,6 +323,96 @@ def reduceFile():
     PlotDataset_log(Plot3, ds, 'ABS')
     PlotDataset(Plot_START, ds, 'ABS')    
     Plot3.x_range = [1.8e-5, 0.02]
+
+
+reduceBatchFilesBtn = Act('reduceBatchFiles()', '*** REDUCE BATCH FILES ***')        
+reduceBatchFilesBtn.colspan = 1
+
+def reduceBatchFiles():
+
+    # find empty files
+    emFileList = filter(None, str(empFiles.value).split(','))
+    for i in xrange(0, len(emFileList)):
+        emFileList[i] = emFileList[i].strip()
+
+    emFilePaths = []
+    if len(emFileList) != 0:
+        for emFile in emFileList:
+            found = False
+            
+            for ds in __DATASOURCE__.getDatasetList():
+                dsLocation = str(ds.getLocation())
+                if emFile in dsLocation:
+                    if not found:
+                        emFilePaths.append(dsLocation)
+                        found = True
+                    else:
+                        print 'Warning: "%s" has multiple matches' % emFile
+                        break
+                    
+            if not found:
+                print 'Warning: "%s" was not found' % emFile
+                
+    if len(emFilePaths) == 0:
+        print ''
+        print 'WARNING: Please select an empty sample container'
+        return
+
+    print 'empty: ', ', '.join(emFilePaths)
+    em = LoadNxHdf(emFilePaths)
+    
+    if em.ScanVariablename == 'm2om':
+        pass
+    else:
+        raise Exception ("This is not an m2om scan")
+    
+    if convert2q.value:
+        pass
+    else:
+        raise Exception("Please tick 'Convert to q'")
+    
+    em.SortAngles()
+    em = RemoveIgnoredRanges(em, empIgnorePts.value)
+    em.FindZeroAngle()
+    em.DetermineQVals()
+    em.FindTWideCtr()    
+
+    # find sample files    
+    dsFilePaths = [str(ds.getLocation()) for ds in __DATASOURCE__.getSelectedDatasets()]
+        
+    if len(dsFilePaths) == 0:
+        print 'Warning: no Sample Scans were selected'
+        return
+
+    # reduction
+    path = 'V:/shared/KKB Logbook/Temp Plot Data Repository/'    
+    
+    for dsFilePath in dsFilePaths:
+        # get name of sample file
+        filename = os.path.basename(dsFilePath)
+        filename = filename[:filename.find('.nx.hdf')]
+
+        ds = LoadNxHdf([dsFilePath])  
+        
+        if ds.ScanVariablename == 'm2om':
+            pass
+        else:
+            raise Exception ("This is not an m2om scan")
+        
+        if convert2q.value:
+            pass
+        else:
+            raise Exception("Please tick 'Convert to q'")
+        
+        ds.SortAngles()    
+        ds = RemoveIgnoredRanges(ds, samIgnorePts.value)
+        ds.FindZeroAngle()
+        ds.DetermineQVals()
+        ds.FindTWideCtr()    
+
+        # correction
+        ds.CorrectData(em)
+        ds.SaveAbs(path + filename + '-abs.dat')
 
 
 #########################################################################################
@@ -464,7 +554,7 @@ bkgLevel_Error.enabled = False
 bkgLevel_space = Par('label', '')
 bkgLevel_space.colspan = 2
 
-g4 = Group('OPTIONAL: RE-DETERMINE AMBIENT BACKGROUND')
+g4 = Group('OPTIONAL: RE-DETERMINE AMBIENT BACKGROUND (AB) AND COPY VALUE TO PATCHED AB INPUT WINDOW')
 g4.numColumns = 2
 g4.add(bkgFiles, bkgFilesTakeBtn, bkgIgnorePts, 
        bkgLevel, bkgLevel_space,bkgLevel_Error)
@@ -589,6 +679,7 @@ class ReductionDataset:
         self.Filename   = os.path.basename(path)
             
         self.CountTimes    = list(ds['entry1/instrument/detector/time'])
+        self.Bex           = list(ds['entry1/instrument/crystal/bex'])
         #self.Angle         = list(ds['entry1/instrument/crystal/m2om'])
         self.MonCts        = list(ds['entry1/monitor/bm1_counts'])
         self.MonCountTimes = list(ds['entry1/monitor/time']) # NEW
@@ -739,7 +830,7 @@ class ReductionDataset:
         min    = h_left // 60
         sec    = h_left % 60
         
-        self.TotalTime_form = str(h) + ':' + str(min) + ':' + str(sec)
+        self.TotalTime_form = "%02i:%02i:%02i" % (h, min, sec)
 
         
         print 'Total Run Time: ' + self.TotalTime_form + ' [h:min:sec]'          
@@ -757,12 +848,14 @@ class ReductionDataset:
         self.MonCtr    = [self.MonCtr    [item[0]] for item in info]
         self.TransCtr  = [self.TransCtr  [item[0]] for item in info]
         self.CountTimes= [self.CountTimes[item[0]] for item in info]
+        self.Bex       = [self.Bex       [item[0]] for item in info]
         self.TimeStamp = [self.TimeStamp [item[0]] for item in info]
         self.ActualTime= [self.ActualTime[item[0]] for item in info]
     
     def Append(self, other): # CHECK MISSING COUNTRATE? CHECK CHECK CHECK!!!
         self.Filename  += ';' + other.Filename
         self.Angle     += other.Angle
+        self.Bex       += other.Bex
         self.DetCtr    += other.DetCtr
         self.ErrDetCtr += other.ErrDetCtr
         self.MonCtr    += other.MonCtr
@@ -778,6 +871,7 @@ class ReductionDataset:
         self.MonCtr    = [self.MonCtr[i]     for i in toKeep]
         self.TransCtr  = [self.TransCtr[i]   for i in toKeep]
         self.CountTimes= [self.CountTimes[i] for i in toKeep]
+        self.Bex       = [self.Bex[i]        for i in toKeep]
         self.TimeStamp = [self.TimeStamp[i]  for i in toKeep]
         self.ActualTime= [self.ActualTime[i] for i in toKeep]
     '''        
@@ -884,8 +978,8 @@ class ReductionDataset:
     
         if len(x0) < 2:
             raise Exception("len(x0) < 2")
-        if x0_max < x0_min:
-            raise Exception("x0_max < x0_min")
+        if x0_min >= x0_max:
+            raise Exception("x0_min >= x0_max")
         if x1_min < x0_min:
             raise Exception("x1_min < x0_min")
         if x0_max < x1_max:
@@ -898,6 +992,12 @@ class ReductionDataset:
         x0i1 = x0[i1]
         y0i1 = y0[i1]
         
+        # in case first x values are equal
+        while x0i0 == x0i1:
+            i1 += 1
+            x0i1 = x0[i1]
+            y0i1 = y0[i1]
+
         try:
             _ = iter(x1)
         except TypeError:
@@ -918,6 +1018,7 @@ class ReductionDataset:
             y1 = [0.0] * len(x1)
             for j in xrange(len(x1)):
                 x1j = x1[j]
+                
                 while x0i1 < x1j:
                     x0i0 = x0i1
                     y0i0 = y0i1
@@ -926,7 +1027,7 @@ class ReductionDataset:
                     
                     x0i1 = x0[i1]
                     y0i1 = y0[i1]
-    
+
                 y1[j] = y0i0 + (x1j - x0i0) * (y0i1 - y0i0) / (x0i1 - x0i0)
     
             return y1
@@ -1163,7 +1264,7 @@ class ReductionDataset:
                     fp.write("%15.6g %15.3f %15.3f %15.6g %15.6g %15.6g" % (newQ, self.DetCtr[i], self.ErrDetCtr[i], -gdqv, -gdqv, -gdqv) + LE)
                     preQ = newQ
         
-        print 'Info: Removed duplicate points in this file: ' + str(doublepoints) + str(doublepointsi)
+        print ('Info: removed %i duplicate points in this file: ' % doublepoints) + str(doublepointsi)
                                        
     def SaveRaw(self, path):
         LE = '\n'
@@ -1179,6 +1280,7 @@ class ReductionDataset:
             if convert2q.value:
                 fp.write('%15s' % 'm2om')
             fp.write('%15s' % 'det_time')
+            fp.write('%15s' % 'bex')
             #fp.write('%15s' % 'timestamp_no')
             #fp.write('%15s' % 'actual_time')
             #fp.write('%15s' % 'diff_time')
@@ -1196,6 +1298,7 @@ class ReductionDataset:
             if convert2q.value:
                 fp.write('%15s' % '[deg]')
             fp.write('%15s' % '[s]')
+            fp.write('%15s' % '[mm]')
             #fp.write('%15s' % '[s]')
             #fp.write('%15s' % '[s]')
             #fp.write('%15s' % '[s]')
@@ -1210,6 +1313,7 @@ class ReductionDataset:
                     fp.write("%15f" % (self.Angle[i]))
                     #fp.write("%15f %15d %15f %15f" % (self.CountTimes[i],self.TimeStamp[i],self.ActualTime[i], self.ActualTime[i] - self.CountTimes[i]))
                 fp.write("%15f" % (self.CountTimes[i]))
+                fp.write("%15f" % (self.Bex[i]))
                 fp.write('\n')
             
             fp.write("FILES: " + self.Filename.replace('.nx.hdf','') + ';  ' + LE)         
@@ -1350,7 +1454,7 @@ def PlotDataset_log(plot, ds, title):
     plot.set_mouse_follower_precision(6,2,2)
     plot.set_log_x_on(True)
     plot.set_log_y_on(True)
-    plot.x_range = [1e-6, 0.02]
+    plot.x_range = [1e-6, 0.05]
     plot.y_range = [0.1, data.max()]
 #    plot.y_min = 0.1
     
