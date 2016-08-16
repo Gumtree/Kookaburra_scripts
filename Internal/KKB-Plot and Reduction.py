@@ -54,8 +54,13 @@ g0.add(combine_tube0, combine_tube1, combine_tube2, combine_tube3, combine_tube4
 use_beammonitor = Par('bool', True)
 use_beammonitor.title = 'Use Beam Monitor'
 
+# DO NOT ASK DAVID ABOUT THIS VALUE !!!
 defaultMCR = Par('float', '8500')
 defaultMCR.title = 'Default MCR'
+
+medianMCR = Par('string', '0')
+medianMCR.title = 'Median MCR'
+medianMCR.enabled = False
 
 TWideMarker = Par('float', '2e-3')
 TWideMarker.title = 'TWide Marker (1/A)'
@@ -63,8 +68,35 @@ TWideMarker.title = 'TWide Marker (1/A)'
 convert2q = Par('bool', True)
 convert2q.title = 'Convert to q'
 
+negative_steps = Par('bool', False)
+negative_steps.title = 'Negative Steps'
+
 sort_scanvar = Par('bool', True)
 sort_scanvar.title = 'Sort Scan Variable'
+
+
+# FIXED construction site
+fix_m2om0 = Par('bool', False)
+fix_m2om0.title = 'Fix m2om 0-position'
+
+fix_int0 = Par('bool', False)
+fix_int0.title = 'Fix intensity at 0-position'
+
+fix_Iwide = Par('bool', False)
+fix_Iwide.title = 'Fix Iwide'
+
+m2om0_fixed = Par('float', '180.32')
+m2om0_fixed.title = 'm2om (q=0)'
+
+int0_fixed = Par('float', '33972.452')
+int0_fixed.title = 'Intensity(q=0)'
+
+Iwide_fixed = Par('float', '674.0')
+Iwide_fixed.title = 'I(wide)'
+
+
+
+
 
 '''
 g1 = Group('Advanced Settings')
@@ -146,7 +178,7 @@ def clearPlots():
    
   
 def __run_script__(fns):
-          
+              
     datasets = __DATASOURCE__.getSelectedDatasets()
     for sds in datasets:
             ds = Dataset(str(sds.getLocation()))
@@ -176,12 +208,38 @@ def __run_script__(fns):
     
     if convert2q.value:        
         ds.FindZeroAngle()
-        ds.DetermineQVals()
+        # under fix construction
+        if fix_m2om0.value:
+            ds.PeakAng = m2om0_fixed.value
+            print 'Peak angle is fixed to ', m2om0_fixed.value
+        if fix_int0.value: # not required
+            print 'I(rock) is fixed to ', int0_fixed.value                
+        
+        
+        ds.DetermineQVals()        
         ds.FindTWideCtr()
+        
+        # under fix construction
+        if fix_Iwide.value: # not required
+            print 'I(wide) is fixed to ', Iwide_fixed.value
+        
     else:
         ds.Qvals = copy(ds.Angle)
             
+    
+    
     ds.SaveRaw(path + filename + '.dat')
+    
+    # determine median beam-monitor count rate
+    buffer = list(ds.MonCtr)
+    buffer.sort()
+    n = len(buffer)
+    if n == 0:
+        medianMCR.value = 'nan'
+    elif n % 2 == 1:
+        medianMCR.value = '%.0f' % (buffer[n/2])
+    else:
+        medianMCR.value = '%.0f' % ((buffer[n/2 - 1] + buffer[n/2]) / 2.0)
     
     PlotTransmissionDataset(Plot1, ds, filename + ': ' + ds.SampleName)   
     PlotMonitorDataset(Plot2, ds, filename + ': ' + ds.SampleName)
@@ -279,8 +337,20 @@ def reduceStitchedFiles():
     ds.SortAngles()    
     ds = RemoveIgnoredRanges(ds, samIgnorePts.value)
     ds.FindZeroAngle()
-    ds.DetermineQVals()
-    ds.FindTWideCtr()    
+                          
+        
+    # under fix construction
+    if fix_m2om0.value:
+        ds.PeakAng = m2om0_fixed.value
+        print 'Peak angle is fixed to ', m2om0_fixed.value
+    if fix_int0.value: # not required
+            print 'I(rock) is fixed to ', int0_fixed.value              
+        
+    ds.DetermineQVals()   
+    ds.FindTWideCtr()
+    # under construction
+    if fix_Iwide.value: # not required
+        print 'I(wide) is fixed to ', Iwide_fixed.value   
     
     PlotDataset(Plot_START, ds, 'SAM: '+ filename)
     PlotTransmissionDataset(Plot1, ds, 'SAM: '+ filename)
@@ -407,8 +477,18 @@ def reduceBatchFiles():
         ds.SortAngles()    
         ds = RemoveIgnoredRanges(ds, samIgnorePts.value)
         ds.FindZeroAngle()
+        
+        if fix_m2om0.value:
+            ds.PeakAng = m2om0_fixed.value
+            print 'Peak angle is fixed to ', m2om0_fixed.value
+        if fix_int0.value: # not required
+            print 'I(rock) is fixed to ', int0_fixed.value
+            
         ds.DetermineQVals()
-        ds.FindTWideCtr()    
+        ds.FindTWideCtr()
+        
+        if fix_Iwide.value: # not required
+            print 'I(wide) is fixed to ', Iwide_fixed.value    
 
         # correction
         ds.CorrectData(em)
@@ -635,9 +715,11 @@ g0.add(combine_tube0, combine_tube1, combine_tube2, combine_tube3, combine_tube4
 
 g1 = Group('Advanced Settings')
 g1.numColumns = 3
-g1.add(use_beammonitor, defaultMCR, TWideMarker, convert2q, sort_scanvar)
+g1.add(use_beammonitor, defaultMCR, medianMCR, TWideMarker, convert2q, negative_steps, sort_scanvar)
 
-
+g2 = Group('Fix m2om and Intensity - under construction')
+g2.numColumns = 2
+g2.add(fix_m2om0, m2om0_fixed, fix_int0, int0_fixed, fix_Iwide, Iwide_fixed)
     
 
 def LoadNxHdf(filePaths):
@@ -709,6 +791,7 @@ class ReductionDataset:
         self.ScanVariable  = str(ds['entry1/instrument/crystal/scan_variable'])
         self.TimeStamp     = list(ds['entry1/time_stamp'])
         
+        
               
         # read parameters from file and possibly patch
                 
@@ -726,6 +809,9 @@ class ReductionDataset:
         self.TWideMarker = TWideMarker.value
         self.ActualTime = range(len(self.Angle))
         self.widepoints = 0
+        
+        start_time         = str(ds['entry1/start_time'])
+        print 'start time: ', start_time
         
 
   
@@ -823,7 +909,10 @@ class ReductionDataset:
   
      # CALCULATE TIME OF THE MEASUREMENT
     def MeasurementTime(self):   
-        TotalTime = self.TimeStamp[-1] 
+        
+        TotalTime = self.TimeStamp[-1] + self.CountTimes[0] # first point is detector time for the first point
+        
+        h      = TotalTime // 3600
         
         h      = TotalTime // 3600
         h_left = TotalTime % 3600
@@ -842,38 +931,38 @@ class ReductionDataset:
     def SortAngles(self):
         info = sorted(enumerate(self.Angle), key=lambda item:item[1])
         
-        self.Angle     = [item[1]                 for item in info]
-        self.DetCtr    = [self.DetCtr    [item[0]] for item in info]
-        self.ErrDetCtr = [self.ErrDetCtr [item[0]] for item in info]
-        self.MonCtr    = [self.MonCtr    [item[0]] for item in info]
-        self.TransCtr  = [self.TransCtr  [item[0]] for item in info]
-        self.CountTimes= [self.CountTimes[item[0]] for item in info]
-        self.Bex       = [self.Bex       [item[0]] for item in info]
-        self.TimeStamp = [self.TimeStamp [item[0]] for item in info]
-        self.ActualTime= [self.ActualTime[item[0]] for item in info]
+        self.Angle      = [item[1]                 for item in info]
+        self.DetCtr     = [self.DetCtr    [item[0]] for item in info]
+        self.ErrDetCtr  = [self.ErrDetCtr [item[0]] for item in info]
+        self.MonCtr     = [self.MonCtr    [item[0]] for item in info]
+        self.TransCtr   = [self.TransCtr  [item[0]] for item in info]
+        self.CountTimes = [self.CountTimes[item[0]] for item in info]
+        self.Bex        = [self.Bex       [item[0]] for item in info]
+        self.TimeStamp  = [self.TimeStamp [item[0]] for item in info]
+        self.ActualTime = [self.ActualTime[item[0]] for item in info]
     
     def Append(self, other): # CHECK MISSING COUNTRATE? CHECK CHECK CHECK!!!
-        self.Filename  += ';' + other.Filename
-        self.Angle     += other.Angle
-        self.Bex       += other.Bex
-        self.DetCtr    += other.DetCtr
-        self.ErrDetCtr += other.ErrDetCtr
-        self.MonCtr    += other.MonCtr
-        self.TransCtr  += other.TransCtr
-        self.CountTimes+= other.CountTimes
-        self.TimeStamp += other.TimeStamp
-        self.ActualTime+= other.ActualTime
+        self.Filename   += ';' + other.Filename
+        self.Angle      += other.Angle
+        self.Bex        += other.Bex
+        self.DetCtr     += other.DetCtr
+        self.ErrDetCtr  += other.ErrDetCtr
+        self.MonCtr     += other.MonCtr
+        self.TransCtr   += other.TransCtr
+        self.CountTimes += other.CountTimes
+        self.TimeStamp  += other.TimeStamp
+        self.ActualTime += other.ActualTime
         
     def KeepOnly(self, toKeep):
-        self.Angle     = [self.Angle[i]      for i in toKeep]
-        self.DetCtr    = [self.DetCtr[i]     for i in toKeep]
-        self.ErrDetCtr = [self.ErrDetCtr[i]  for i in toKeep]
-        self.MonCtr    = [self.MonCtr[i]     for i in toKeep]
-        self.TransCtr  = [self.TransCtr[i]   for i in toKeep]
-        self.CountTimes= [self.CountTimes[i] for i in toKeep]
-        self.Bex       = [self.Bex[i]        for i in toKeep]
-        self.TimeStamp = [self.TimeStamp[i]  for i in toKeep]
-        self.ActualTime= [self.ActualTime[i] for i in toKeep]
+        self.Angle      = [self.Angle[i]      for i in toKeep]
+        self.DetCtr     = [self.DetCtr[i]     for i in toKeep]
+        self.ErrDetCtr  = [self.ErrDetCtr[i]  for i in toKeep]
+        self.MonCtr     = [self.MonCtr[i]     for i in toKeep]
+        self.TransCtr   = [self.TransCtr[i]   for i in toKeep]
+        self.CountTimes = [self.CountTimes[i] for i in toKeep]
+        self.Bex        = [self.Bex[i]        for i in toKeep]
+        self.TimeStamp  = [self.TimeStamp[i]  for i in toKeep]
+        self.ActualTime = [self.ActualTime[i] for i in toKeep]
     '''        
     def FindZeroAngle(self):
         # find peak
@@ -1152,8 +1241,23 @@ class ReductionDataset:
         deg2rad = 3.14159265359 / 180
         f = 4 * 3.14159265359 / self.Wavelength
         
+        if bool(negative_steps.value):
+            f *= -1.0
+            
         self.Qvals = [f * sin(deg2rad * (angle - self.PeakAng) / 2) for angle in self.Angle]
-         
+        
+        if bool(negative_steps.value):
+            self.Angle.reverse()
+            self.Qvals.reverse()
+            self.DetCtr.reverse()
+            self.ErrDetCtr.reverse()
+            self.MonCtr.reverse()
+            self.TransCtr.reverse()
+            self.CountTimes.reverse()
+            self.Bex.reverse()
+            self.TimeStamp.reverse()
+            self.ActualTime.reverse()
+
     def FindTWideCtr(self):
 
         level = self.TWideMarker
@@ -1193,6 +1297,15 @@ class ReductionDataset:
 
         empRock = emp.PeakVal
         empWide = emp.TWideCtr
+        
+        # under construction FIX
+        if fix_int0.value:
+            samRock = int0_fixed.value
+            print 'I(rock) is fixed to ', int0_fixed.value
+        if fix_Iwide.value:
+            samWide = Iwide_fixed.value
+            print 'I(wide) is fixed to ', Iwide_fixed.value
+
 
         self.TransRock  = samRock / empRock
         self.TransWide  = samWide / empWide
@@ -1225,9 +1338,64 @@ class ReductionDataset:
             
             
             self.DetCtr[i]    *= scale
-            self.ErrDetCtr[i] *= scale                            
+            self.ErrDetCtr[i] *= scale
+            
+                        
 
     def SaveAbs(self, path):
+        
+
+        
+        LE = '\n'
+        with open(path, 'w') as fp:
+            fp.write("CREATED: " + datetime.now().strftime("%a, %d %b %Y at %H:%M:%S") + LE) 
+            fp.write("SAMPLE: " + self.SampleName + '; ' + self.SampleDescr + '; Thickness [cm]: %g' % (self.Thick) + LE)
+            fp.write("SAMPLE: " + self.SampleName + '; ' + self.SampleDescr + '; Thickness [cm]: %g' % (self.Thick) + LE)
+            fp.write("FILES: " + self.Filename.replace(';',',') + LE)
+            
+
+
+          
+            try:
+                pass
+                #fp.write("EMP LEVEL: %g ; BKG LEVEL: %g" % (self.empLevel, self.Emp.bkgLevel) + LE)
+            except:
+                pass
+                #fp.write("SAM PEAK ANGLE: %g" % self.PeakAng + LE)
+                #fp.write("EMP LEVEL: %g" % self.empLevel + LE)
+
+            # divergence, in terms of Q (1/A) 
+            gdqv = self.gDQv
+            
+            doublepoints = 0
+            doublepointsi = []
+            
+            preQ = float('nan')
+            for i in xrange(len(self.Qvals)):
+                newQ = self.Qvals[i]
+                
+                if preQ == newQ:
+                    doublepoints +=1
+                    doublepointsi.append(i)
+                if preQ != newQ:
+                    fp.write("%15.6g %15.3f %15.3f %15.6g %15.6g %15.6g" % (newQ, self.DetCtr[i], self.ErrDetCtr[i], -gdqv, -gdqv, -gdqv) + LE)
+                    preQ = newQ
+            
+                   
+            fp.write("AMBIENT BACKGROUND: %g" % self.SampleBkg + LE)
+            fp.write("EMP LEVEL: %g " % (self.empLevel) + LE) 
+            fp.write("EMP FILES: " + self.Emp.Filename.replace(';',',') + "; EMP LEVEL: %.4g " % self.empLevel + LE)
+            fp.write("Trock = %.4f; Twide = %.4f; Tsas = %.4f" % (self.TransRock, self.TransWide, self.TransRock / self.TransWide) + LE)
+            fp.write("SAM PEAK ANGLE: %.5f ; EMP PEAK ANGLE: %.5f" % (self.PeakAng, self.Emp.PeakAng) + LE)
+
+        
+        print ('Info: removed %i duplicate points in this file: ' % doublepoints) + str(doublepointsi)
+        
+    '''
+    def SaveAbs(self, path):
+        
+
+        
         LE = '\n'
         with open(path, 'w') as fp:
             fp.write("FILES: " + self.Filename.replace(';',',') + LE)
@@ -1265,6 +1433,7 @@ class ReductionDataset:
                     preQ = newQ
         
         print ('Info: removed %i duplicate points in this file: ' % doublepoints) + str(doublepointsi)
+    '''
                                        
     def SaveRaw(self, path):
         LE = '\n'
@@ -1280,10 +1449,10 @@ class ReductionDataset:
             if convert2q.value:
                 fp.write('%15s' % 'm2om')
             fp.write('%15s' % 'det_time')
-            fp.write('%15s' % 'bex')
+            #fp.write('%15s' % 'bex')
             #fp.write('%15s' % 'timestamp_no')
-            #fp.write('%15s' % 'actual_time')
-            #fp.write('%15s' % 'diff_time')
+            fp.write('%15s' % 'actual_time')
+            fp.write('%15s' % 'diff_time')
             fp.write('\n')
             
             
@@ -1298,8 +1467,8 @@ class ReductionDataset:
             if convert2q.value:
                 fp.write('%15s' % '[deg]')
             fp.write('%15s' % '[s]')
-            fp.write('%15s' % '[mm]')
-            #fp.write('%15s' % '[s]')
+            #fp.write('%15s' % '[mm]')
+            fp.write('%15s' % '[s]')
             #fp.write('%15s' % '[s]')
             #fp.write('%15s' % '[s]')
             fp.write('\n')
@@ -1311,9 +1480,10 @@ class ReductionDataset:
                 fp.write("%15.3f %15.3f" % (self.TransCtr[i], self.MonCtr[i]))
                 if convert2q.value:
                     fp.write("%15f" % (self.Angle[i]))
-                    #fp.write("%15f %15d %15f %15f" % (self.CountTimes[i],self.TimeStamp[i],self.ActualTime[i], self.ActualTime[i] - self.CountTimes[i]))
-                fp.write("%15f" % (self.CountTimes[i]))
-                fp.write("%15f" % (self.Bex[i]))
+                fp.write("%15f %15f %15f" % (self.CountTimes[i],self.ActualTime[i], self.ActualTime[i] - self.CountTimes[i]))
+                #fp.write("%15f" % (self.TimeStamp[i]))
+                #fp.write("%15f" % (self.CountTimes[i]))
+                #fp.write("%15f" % (self.Bex[i]))
                 fp.write('\n')
             
             fp.write("FILES: " + self.Filename.replace('.nx.hdf','') + ';  ' + LE)         
@@ -1328,6 +1498,7 @@ class ReductionDataset:
                 pass   
             fp.write("TOTAL_TIME [h:min:sec]: " + self.TotalTime_form + LE)
                 
+            
                 
 def DeadtimeCorrection(counts, deadTime, countTimes):
     # x1 = x0 - (x0 - y*e^cx0) / (1 - cx0)
@@ -1436,6 +1607,9 @@ def PlotDataset(plot, ds, title):
     plot.set_mouse_follower_precision(6,2,2)
     plot.set_log_y_on(True)
     plot.y_range = [0.1, data.max()]
+    
+    # under construction
+
            
 def PlotDataset_log(plot, ds, title):
     data = zeros(len(ds.Qvals))
