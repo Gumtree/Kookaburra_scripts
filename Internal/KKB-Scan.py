@@ -141,10 +141,10 @@ if not os.path.exists(__EXPORT_PATH__):
     
 # # User Details
 
-user_name = Par('string', 'Christine', options=['Christine', 'Lela'])
+user_name = Par('string', 'Christine', options=['Christine', 'Lela', 'Jitendra'])
 user_name.title = 'Name'
 
-user_email = Par('string', 'cre@ansto.gov.au', options=['cre@ansto.gov.au', 'liliana.decampo@ansto.gov.au'])
+user_email = Par('string', 'cre@ansto.gov.au', options=['cre@ansto.gov.au', 'liliana.decampo@ansto.gov.au', 'jtm@ansto.gov.au'])
 user_email.title = 'EMail'
 
 g0 = Group('User Details')
@@ -883,6 +883,29 @@ def getScan():
 
 def startScan(configModel):
     
+    ''' check instrument ready '''
+    
+    is_ready = False
+    try:
+        is_ready = sics.getValue('/instrument/status/ready').getStringData() == 'TRUE'
+    except:
+        pass
+    if not is_ready:
+        is_confirmed = open_question('The instrument is not ready '\
+                    + 'according to the SIS status. Please get the '\
+                    + 'instrument ready. Then click on "Yes" to continue. \n'\
+                    + 'Do you want to continue?')
+        if not is_confirmed:
+            slog('Instrument is not ready. Quit the scan.')
+            return
+        else:
+            try:
+                is_ready = sics.getValue('/instrument/status/ready').getStringData() == 'TRUE'
+            except:
+                pass
+            if not is_ready: 
+                slog('scan continued without instrument ready')
+        
     ''' setup '''
     
     scanVariable = configModel.scanVariable
@@ -1043,69 +1066,58 @@ def startScan(configModel):
         
         pos2samz = {}
         
-        '''
-        # Quokka Sample tumbler Dec 2015
-        pos2samz['1'] = 202.6
-        pos2samz['2'] = 262.5
-        pos2samz['3'] = 322.7
-        pos2samz['4'] = 382.7
-        pos2samz['5'] = 442.6       
-        '''
+        #Quokka Sample tumbler Dec 2015
+        #pos2samz['1'] = 202.6
+        #pos2samz['2'] = 262.5
+        #pos2samz['3'] = 02.7
+        #pos2samz['4'] = 382.7
+        #pos2samz['5'] = 442.6       
         
-        
-        # KKB new 1mm CELLS WITH PERMANENT ORIGINAL (NEW) 30mm APERTURE
-        # need metal spacer beneath them
-        pos2samz['1'] = 32    
-        pos2samz['2'] = 177   
-        pos2samz['3'] = 321.5 
-        pos2samz['4'] = 468 
-        pos2samz['5'] = 612.5  
-        
-        '''
-        # Original centre of sample compartment
-        pos2samz['1'] =  35.5 #33.5
-        pos2samz['2'] = 181.0 #178.5
-        pos2samz['3'] = 326.0 #323.5
-        pos2samz['4'] = 472.5 #468.5
-        pos2samz['5'] = 617.0 #613.5
-        '''
-        '''
-        # KKB new 10mm and 0.5mm CELLS WITH PERMANENT ORIGINAL (NEW) 30mm APERTURE
-        # NO metal spacer!
-        pos2samz['1'] = 34   
-        pos2samz['2'] = 179   
-        pos2samz['3'] = 323.5 
-        pos2samz['4'] = 470 
-        pos2samz['5'] = 614.5 
-        '''
-        
-        '''
         # QUOKKA CELLS WITH PERMANENT ORIGINAL (NEW) 15mm APERTURE
         # this is right in the middle with 1mm gap on each side 
         # December 2015
-        pos2samz['1'] = 30.0
-        pos2samz['2'] = 176.0
-        pos2samz['3'] = 320.0 # CHECK TROUBLESOME
-        pos2samz['4'] = 467.0
-        pos2samz['5'] = 612.0
+        pos2samz['1'] = 37.0
+        pos2samz['2'] = 183.0
+        pos2samz['3'] = 327.0 # CHECK TROUBLESOME
+        pos2samz['4'] = 474.0
+        pos2samz['5'] = 619.0
+        '''   
+        pos2samz['1-16'] = 31.1
+        pos2samz['2-16'] = 71.6
+        pos2samz['3-16'] = 111.6
+        pos2samz['4-16'] = 152.2
+        pos2samz['5-16'] = 192.0
+        pos2samz['6-16'] = 231.9
+        pos2samz['7-16'] = 271.8
+        pos2samz['8-16'] = 312.1
+        pos2samz['9-16'] = 352.4
+        pos2samz['10-16'] = 392.2
+        pos2samz['11-16'] = 432.4
+        pos2samz['12-16'] = 472.5
+        pos2samz['13-16'] = 512.3
+        pos2samz['14-16'] = 552.6
+        pos2samz['15-16'] = 592.5
+        pos2samz['16-16'] = 633.0
         '''
-        pos2samz['1-16'] = 28.1
-        pos2samz['2-16'] = 68.6
-        pos2samz['3-16'] = 108.6
-        pos2samz['4-16'] = 149.2
-        pos2samz['5-16'] = 189.0
-        pos2samz['6-16'] = 228.9
-        pos2samz['7-16'] = 268.8
-        pos2samz['8-16'] = 309.1
-        pos2samz['9-16'] = 349.4
-        pos2samz['10-16'] = 389.2
-        pos2samz['11-16'] = 429.4
-        pos2samz['12-16'] = 469.5
-        pos2samz['13-16'] = 509.3
-        pos2samz['14-16'] = 549.6
-        pos2samz['15-16'] = 589.5
-        pos2samz['16-16'] = 630.0
         
+       # pos2samz['1'] = 33.9 #37.1 #31.1
+       # pos2samz['2'] = 179.3 #182.5 #71.6
+       # pos2samz['3'] = 324.5 #327.7 #111.6
+       # pos2samz['4'] = 469.5 #472.7 #152.2
+       # pos2samz['5'] = 615.6 #618.8 #192.0
+        #pos2samz['6'] = 231.9
+        #pos2samz['7'] = 271.8
+        #pos2samz['8'] = 312.1
+        #pos2samz['9'] = 352.4
+        #pos2samz['10'] = 392.2
+        #pos2samz['11'] = 432.4
+        #pos2samz['12'] = 472.5
+        #pos2samz['13'] = 512.3
+        #pos2samz['14'] = 552.6
+        #pos2samz['15'] = 592.5
+        #pos2samz['16'] = 633.0
+        
+        '''
         pos2samz['1 top'   ] = 17.4
         pos2samz['1 bottom'] = 77.7
         pos2samz['2 top'   ] = 163.5
@@ -1116,25 +1128,26 @@ def startScan(configModel):
         pos2samz['4 bottom'] = 513.6
         pos2samz['5 top'   ] = 598.2
         pos2samz['5 bottom'] = 658.0
-
+        
         samz_list.append(pos2samz[sam_positions])
 
+
         '''
+
         for range in filter(None, sam_positions.split(',')):
             rangeItems = range.split('-')
             if ('' in rangeItems) or (len(rangeItems) < 1) or (len(rangeItems) > 2):
                 raise Exception('format in "Sample Position" is incorrect')
             
             if len(rangeItems) == 1:
-                samz_list.append(pos2samz[int(rangeItems[0])])
+                samz_list.append(pos2samz[str(rangeItems[0])])
             else:
                 for i in xrange(int(rangeItems[0]), int(rangeItems[1])+1):
-                    samz_list.append(pos2samz[i])
+                    samz_list.append(pos2samz[str(i)])
                     
         if len(samz_list) == 0:
             samz_list = [0.0]
             
-        '''
 
     for samz in samz_list:
     
@@ -1286,8 +1299,8 @@ def startScan(configModel):
                 print 'measured count rate:', roi_rate
                 count_rate_history.append(roi_rate)
                 
-                bkg_frames = 3 # change back to 5
-                bkg_range  = bkgLevel + 0.05
+                bkg_frames = 5
+                bkg_range  = bkgLevel + 0.11
 
                 if (len(count_rate_history) >= bkg_frames) and (builtin_max(count_rate_history[-bkg_frames:]) < bkg_range):
                     print 'background reached'
@@ -1338,8 +1351,10 @@ def btnPlotSteps_clicked():
     dummy = zeros(2)
     dummy.axes[0] = [scan_angleMin, scan_angleMax]
     
-    print [scan_angleMin, scan_angleMax]
+    #print [scan_angleMin, scan_angleMax]
     
+    if Plot1.ds != None:
+        Plot1.clear_masks()
     Plot1.add_dataset(dummy)
     Plot1.title = 'Preview'
     Plot1.x_label = 'm2om'
@@ -1387,6 +1402,9 @@ def btnPlotSteps_clicked():
 
     dummy = zeros(2)
     dummy.axes[0] = [scan_angleMin, scan_angleMax]
+    
+    if Plot2.ds != None:
+        Plot2.clear_masks()
     
     Plot2.add_dataset(dummy)
     Plot2.title = 'Preview'
@@ -1568,6 +1586,7 @@ def btnPlot_clicked():
 
     
     Plot2.clear()
+    time.sleep(0.3)
     
     ds0 = Plot1.ds[0]  # # don't understand how this works
     xMax = 0
@@ -1621,6 +1640,7 @@ def __run_script__(fns):
     global Plot3
         
     print 'please press "Run Single Scan" or "Run Multiple Scans"'
+    btnPlot_clicked()
 
 def __dispose__():
     global Plot1

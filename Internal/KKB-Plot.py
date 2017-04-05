@@ -209,10 +209,13 @@ def proc_fn(path):
     for i in xrange(len(ds.time)):        
         if ds.time[i] < 0.5:
             ds.time[i] = float('inf')
+
     
     scanVariable = str(scan_variable.value)
     scanVariable = scanVariable[:scanVariable.find(' ')]
     scanVariable = ds[scanVariable]
+    
+    
     
     samplename = str(ds.samplename) 
     sampledescription = str(ds.sampledescription) 

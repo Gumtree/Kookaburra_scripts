@@ -51,7 +51,7 @@ g0.add(combine_tube0, combine_tube1, combine_tube2, combine_tube3, combine_tube4
 '''
 
 
-use_beammonitor = Par('bool', True)
+use_beammonitor = Par('bool', False)
 use_beammonitor.title = 'Use Beam Monitor'
 
 # DO NOT ASK DAVID ABOUT THIS VALUE !!!
@@ -792,6 +792,7 @@ class ReductionDataset:
         self.TimeStamp     = list(ds['entry1/time_stamp'])
         
         
+        
               
         # read parameters from file and possibly patch
                 
@@ -800,7 +801,12 @@ class ReductionDataset:
         self.SampleDescr   = TryGet(ds, ['entry1/sample/description'                 ], SampleDescr.value , SampleDescr_Patching.value )
         self.SampleBkg     = TryGet(ds, ['entry1/experiment/bkgLevel'                ], SampleBkg.value , SampleBkg_Patching.value )
 
-    
+        #self.Magnet   = float(ds, ['entry1/data/BO1SO1'              ], Magnet.value)
+        #self.Temp     = float(ds, ['entry1/data/T1S2'                ], Temp.value)
+        
+        #print 'Magnet', self.Magnet.value
+        #print 'Temp', self.Temp.value
+   
         
         self.empLevel = empLevel.value
         self.empLevel_Error = empLevel_Error.value
@@ -1317,7 +1323,8 @@ class ReductionDataset:
         print '  '
         
         scale = 1.0 / (self.TransWide * self.Thick * dOmega * emp.PeakVal)                
-               
+        
+        print 'scale:' , scale        
         maxq = emp.Qvals[-1]
         for i in xrange(len(self.Qvals)):
             wq = self.Qvals[i]
@@ -1330,7 +1337,7 @@ class ReductionDataset:
                 #tempErr = 0
                 #tempErr = 0 ### MISSING NEEDS TO BE CHANGED!!!
  
-            detCtr = self.DetCtr[i] - self.SampleBkg
+            detCtr = self.DetCtr[i] - self.SampleBkg #- 0.15 # if we forgot the shielding
             empCtr = tempI          - self.SampleBkg
 
             self.DetCtr[i]    = detCtr - self.TransRock * empCtr
