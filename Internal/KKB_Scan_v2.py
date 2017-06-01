@@ -1,6 +1,6 @@
 
 __script__.title = 'KKB Measurement Script'
-__script__.version = '1.0'
+__script__.version = '2.1'
 
 from gumpy.commons import sics
 from org.gumtree.gumnix.sics.control import ServerStatus
@@ -327,7 +327,7 @@ steps_templates = Par('string', '', options=[item[0] for item in steps_templates
 steps_templates.title = 'Scan Template'
 steps_templates.colspan = 100
 
-early_exit_enabled = Par('bool', True)
+early_exit_enabled = Par('bool', True, command = "set_early_exit_enabled()")
 early_exit_enabled.title = "Enable Early Exit"
 early_exit_enabled.colspan = 25
 
@@ -357,6 +357,14 @@ def sample_stage_changed():
     else:
         scan_sample_position.options = ['fixed', '----------']
 
+def set_early_exit_enabled():
+    if early_exit_enabled.value:
+        background_frames.enabled = True
+        background_threshold.enabled = True
+    else:
+        background_frames.enabled = False
+        background_threshold.enabled = False
+    
 stepInfo = []
 
 for i in xrange(4):
@@ -622,9 +630,9 @@ def loadConfigurations():
     cnfg_lookup.clear()
     cnfg_lookup.update(finalDict)
     
-    cnfg_options.options = finalNames
-    time.sleep(0.5)
     cnfg_options.value = finalNames[0] if finalNames else ''
+    cnfg_options.options = finalNames
+#    time.sleep(0.5)
     
             
 def applyConfiguration():
@@ -657,6 +665,9 @@ def runConfigurations():
     for file in cnfg_options.options:
         fh = open(cnfg_lookup[file], 'r')
         try:
+            cnfg_options.command = ''
+            cnfg_options.value = file
+            applyConfiguration()
             p = Unpickler(fh)
             if p.load() != 'KKB':
                 print 'ERROR:', file
@@ -674,6 +685,7 @@ def runConfigurations():
                     print 'run:', file
                     startScan(model)
         finally:
+            cnfg_options.command = 'applyConfiguration()'
             fh.close()
 
 
@@ -1710,3 +1722,9 @@ class ConfigurationModel:
         early_exit_enabled.value = self.early_exit_enabled
         background_frames.value = self.bkg_frames
         background_threshold.value = self.bkg_threshold
+        if early_exit_enabled.value :
+            background_frames.enabled = True
+            background_threshold.enabled = True
+        else:
+            background_frames.enabled = False
+            background_threshold.enabled = False
