@@ -56,8 +56,8 @@ def open_file_dialog(type=SWT.SINGLE, ext=['*.*']):
 # # templates
 
 reference_templates_dict = {}
-reference_templates_dict['Si111'] = 180.326
-reference_templates_dict['Si311'] = 0.057
+reference_templates_dict['Si111'] = 180.3565
+reference_templates_dict['Si311'] = -0.4100
 
 steps_templates_list = []
 
@@ -74,30 +74,31 @@ steps_templates_list.append([
     'time',
     'logscale',
     [17, 1.20e-4, 1, 1200],
-    [30, 2.0e-4, 20, 1200]])
+    [30, 22.0, 20, 1200]])
 
 steps_templates_list.append([
     'Si111: Logarithmic Scan (few features)',
     'ba',
     'logscale',
     [33, 6.0e-5, 1000, 1200],
-    [33, 2.0e-4, 1000, 1200]])
+    [34, 20.0, 1000, 1200]])
 
 steps_templates_list.append([
     'Si111: Logarithmic Scan (fine features)',
     'ba',
     'logscale',
     [33, 6.0e-5, 1000, 1200],
-    [73, 8.0e-5, 1000, 1200]])
+    [65, 10.0, 1000, 1200]])
 
 steps_templates_list.append([
-    'Si111: Kinetic Scan 8 points',
-    'time',
+    'Si111: Logarithmic Taiki Scan (15 points)',
+    'ba',
     'logscale',
-    [ 0, 6.0e-5, 1, 1200],
-    [1, 3.0e-3, 180, 1200],
-    [7, 3.0e-3, 180, 1200]])
+    [2, 6.0e-5, 1000, 60],
+    [1, 10000, 1000, 60],
+    [10, 25, 1000, 60]])
 
+'''
 steps_templates_list.append([
     'Si111: Kinetic Scan 4 points',
     'time',
@@ -105,6 +106,8 @@ steps_templates_list.append([
     [ 0, 6.0e-5, 1, 1200],
     [1, 5.0e-3, 180, 1200],
     [3, 1.5e-2, 180, 1200]])
+
+'''
 
 steps_templates_list.append([
     '----------',
@@ -117,25 +120,34 @@ steps_templates_list.append([
     'time',
     'logscale',
     [17, 2.0e-5, 1, 1200],
-    [30, 3.7e-5, 20, 1200]])
+    [30, 23.0, 20, 1200]])
 
 steps_templates_list.append([
-    'Si311: Logarithmic Scan (few features, broadened peak)',
+    'Si311: Logarithmic Scan (few features, broadened peak, 80+29)',
     'ba',
     'logscale',
     [80, 2e-5, 1000, 1200],
-    [29, 1e-4, 1000, 1200]])
+    [29, 15.0, 1000, 1200]])
 
 steps_templates_list.append([
-    'Si311: Logarithmic Scan (fine features)',
+    'Si311: Logarithmic Scan (few features, broadened peak, 40+33)',
     'ba',
     'logscale',
-    [31, 2e-5, 1000, 1200],
-    [60, 2.5e-5, 1000, 1200]])
+    [40, 2e-5, 1000, 1200],
+    [33, 10.0, 1000, 1200]])
+
+steps_templates_list.append([
+    'Si311: Logarithmic Scan (few features, Taiki)',
+    'ba',
+    'logscale',
+    [33, 2e-5, 1000, 1200],
+    [25, 20.0, 1000, 1200]])
+
 
 ret = sample_stage.check_declarations()
 if not ret[0] :
     open_warning(ret[1])
+reload(sample_stage)
 SAMPLE_STAGES = sample_stage.StagePool()
 
 # # export path
@@ -268,7 +280,8 @@ g0.add(pss_ss1vg, pss_ss1vo, pss_ss1hg, pss_ss1ho)
 ## Scan parameters ##########################################################################################################
 
 scan_variable = Par('string', 'm2om [deg]', options=[
-    'pmom [deg]', 'pmchi [deg]', 'm1om [deg]', 'm1chi [deg]', 'm1x [mm]', 'm2om [deg]', 'm2chi [deg]', 'm2x [mm]', 'm2y [mm]', 'mdet [mm]',
+    #'pmom [deg]', 'pmchi [deg]', 
+    'm1om [deg]', 'm1chi [deg]', 'm1x [mm]', 'm2om [deg]', 'm2chi [deg]', 'm2x [mm]', 'm2y [mm]', 'mdet [mm]',
     'ss1u [mm]', 'ss1d [mm]', 'ss1l [mm]', 'ss1r [mm]',
     'ss2u [mm]', 'ss2d [mm]', 'ss2l [mm]', 'ss2r [mm]',
     'ss1vg [mm]', 'ss1vo [mm]', 'ss1hg [mm]', 'ss1ho [mm]',
@@ -312,7 +325,7 @@ scan_sample_position.options = ['fixed', '----------']
 if not current_stage is None:
      scan_sample_position.options += current_stage.get_sample_indexes()
 
-logscale_position = Par('bool', True)
+logscale_position = Par('bool', False, command='setStepTitles()')
 logscale_position.title = 'Logarithmic Steps'
 logscale_position.colspan = 25
 
@@ -364,7 +377,7 @@ for i in xrange(4):
     steps_e.title = '(%i)' % (i + 1)
     steps_e.colspan = 10
     steps_m = Par('int', 0, command='clearScanTemplateSelection()')
-    steps_m.title = 'Number of steps'
+    steps_m.title = 'Number of points'
     steps_m.colspan = 20
     steps_s = Par('float', 0, command='clearScanTemplateSelection()')
     steps_s.title = 'Step Size [deg]'
@@ -786,7 +799,15 @@ g0.add(pss_ss2vg, pss_ss2vo, pss_ss2hg, pss_ss2ho)
 ################################# SLIT 2 END ##########################################################
 
 
+def setStepTitles():
+    if logscale_position.value:
+        for stepInfoItem in stepInfo[1:]:
+            stepInfoItem['stepSize'].title = "Step Factor [%]"
+    else:
+        for stepInfoItem in stepInfo[1:]:
+            stepInfoItem['stepSize'].title = "Step Size [deg]"
 
+    __UI__.updateUI()
 
 def setTemplate():
     try:
@@ -807,6 +828,8 @@ def setTemplate():
             logscale_position.value = True
         elif template[2] == 'linear':
             logscale_position.value = False
+            
+        setStepTitles()
             
         # by default templates measure in positive direction
         negative_steps.value = False
@@ -867,6 +890,8 @@ def getScan():
     
     scan = { 'angles': [], 'presets': [], 'maxTimes': [], 'groups': [] }
     
+    
+    
     first = True
     angle_ref = scan_reference.value
     angle = angle_ref
@@ -883,35 +908,28 @@ def getScan():
             
             if (dataPoints > 0) and (stepSize <= 0.0):
                 raise Exception('step sizes have to be positive')
-            
-            if first:
-                angle -= ((dataPoints - 1) / 2.0) * stepSize;
-                
-            elif len(scan['angles']) != 0:
-                angle += stepSize
-                
-            scan['angles'  ].append(angle)
-            scan['presets' ].append(preset)
-            scan['maxTimes'].append(maxTime)
-            
-            scan['groups'].append(angle)
-            for i in xrange(1, dataPoints):
-                if logscale:
-                    a0 = ln(angle - angle_ref - stepSize)
-                    a1 = ln(angle - angle_ref)                    
-                    a2 = a1 + (a1 - a0);
+
+            for i in xrange(dataPoints):
+                if first and (i == 0):
+                    angle -= ((dataPoints - 1) / 2.0) * stepSize;
+                elif logscale:
+                    # for logscale stepSize is a stepFactor
+                    angle = angle_ref + (angle - angle_ref) * (1.0 + 0.01 * stepSize)
+                else:
+                    angle += stepSize
                     
-                    if not isnan(a2) and not isinf(a2):
-                        stepSize = angle_ref + exp(a2) - angle
-                    
-                angle += stepSize
+                #print angle
 
                 scan['angles'  ].append(angle)
                 scan['presets' ].append(preset)
                 scan['maxTimes'].append(maxTime)
+                
+                if i == 0:
+                    scan['groups'].append(angle)
 
         first = False
         logscale = bool(logscale_position.value)
+        
 
     if negative:
         # negate angles with reference to zero angle

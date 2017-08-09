@@ -87,6 +87,19 @@ class AbstractSampleStage():
 # QUOKKA CELLS WITH PERMANENT ORIGINAL (NEW) 15mm APERTURE
 # this is right in the middle with 1mm gap on each side 
 # December 2015
+
+class KKB05cells(AbstractSampleStage):
+    name = "KKB 5 Cells"
+    in_service = True
+    index_samz_pairs = [
+                        ('1', 35.5), 
+                        ('2', 181), 
+                        ('3', 326), 
+                        ('4', 472),
+                        ('5', 617),
+                        ]
+
+
 class Quokka5Cells15mmAperture(AbstractSampleStage):
     name = "QKK 5 Cells"
     in_service = False
@@ -100,25 +113,25 @@ class Quokka5Cells15mmAperture(AbstractSampleStage):
 
 class KKB16Cells(AbstractSampleStage):
     name = "KKB 16 Cells"
-    in_service = True
+    in_service = False
     index_samz_pairs = [
-                        ('1-16', 31.1),
-                        ('2-16', 71.6),
-                        ('3-16', 111.6),
-                        ('4-16', 152.2),
-                        ('5-16', 192.0),
-                        ('6-16', 231.9),
-                        ('7-16', 271.8),
-                        ('8-16', 312.1),
-                        ('9-16', 352.4),
-                        ('10-16', 392.2),
-                        ('11-16', 432.4),
-                        ('12-16', 472.5),
-                        ('13-16', 512.3),
-                        ('14-16', 552.6),
-                        ('15-16', 592.5),
-                        ('16-16', 633.0),
-                        ]
+                        ('1-16', 33.1),
+                        ('2-16', 73.6),
+                        ('3-16', 113.6),
+                        ('4-16', 154.2),
+                        ('5-16', 194.0),
+                        ('6-16', 233.9),
+                        ('7-16', 273.8),
+                        ('8-16', 314.1),
+                        ('9-16', 354.4),
+                        ('10-16', 394.2),
+                        ('11-16', 434.4),
+                        ('12-16', 474.5),
+                        ('13-16', 514.3),
+                        ('14-16', 554.6),
+                        ('15-16', 594.5),
+                        ('16-16', 635.0),
+                        ] # 28.7.2017 with 5x5mm aperture on slider and sample
     
 class KKB10Cells(AbstractSampleStage):
     name = "KKB 10 Cells"
