@@ -55,7 +55,7 @@ def open_file_dialog(type=SWT.SINGLE, ext=['*.*']):
 
 reference_templates_dict = {}
 reference_templates_dict['Si111'] = 180.326
-reference_templates_dict['Si311'] = 0.057
+reference_templates_dict['Si311'] = -0.4101
 
 steps_templates_list = []
 
@@ -118,11 +118,20 @@ steps_templates_list.append([
     [30, 3.7e-5, 20, 1200]])
 
 steps_templates_list.append([
-    'Si311: Logarithmic Scan (few features, broadened peak)',
+    'Si311: Logarithmic Scan (few features, broadened peak, 80+29)',
     'ba',
     'logscale',
     [80, 2e-5, 1000, 1200],
     [29, 1e-4, 1000, 1200]])
+
+
+steps_templates_list.append([
+    'Si311: Logarithmic Scan (few features, broadened peak, 40+33)',
+    'ba',
+    'logscale',
+    [40, 2e-5, 1000, 1200],
+    [33, 6e-5, 1000, 1200]])
+
 
 steps_templates_list.append([
     'Si311: Logarithmic Scan (fine features)',
@@ -1066,6 +1075,20 @@ def startScan(configModel):
         
         pos2samz = {}
         
+        #KKB standard cells with 
+        #pos2samz['1'] = 35.5
+        #pos2samz['2'] = 181
+        #pos2samz['3'] = 326
+       # pos2samz['4'] = 472
+        #pos2samz['5'] = 617
+       
+       #KKB standard cells with ~38 mm disc at bottom
+        #pos2samz['1'] = 39.45
+        #pos2samz['2'] = 184.95
+        #pos2samz['3'] = 329.95
+        #pos2samz['4'] = 475.95
+        #pos2samz['5'] = 620.95
+        
         #Quokka Sample tumbler Dec 2015
         #pos2samz['1'] = 202.6
         #pos2samz['2'] = 262.5
@@ -1075,12 +1098,12 @@ def startScan(configModel):
         
         # QUOKKA CELLS WITH PERMANENT ORIGINAL (NEW) 15mm APERTURE
         # this is right in the middle with 1mm gap on each side 
-        # December 2015
-        pos2samz['1'] = 37.0
-        pos2samz['2'] = 183.0
-        pos2samz['3'] = 327.0 # CHECK TROUBLESOME
-        pos2samz['4'] = 474.0
-        pos2samz['5'] = 619.0
+        # June 2017
+        pos2samz['1'] = 35.5
+        pos2samz['2'] = 181.5
+        pos2samz['3'] = 325.5 # CHECK TROUBLESOME
+        pos2samz['4'] = 472.5
+        pos2samz['5'] = 617.5
         '''   
         pos2samz['1-16'] = 31.1
         pos2samz['2-16'] = 71.6
@@ -1299,8 +1322,8 @@ def startScan(configModel):
                 print 'measured count rate:', roi_rate
                 count_rate_history.append(roi_rate)
                 
-                bkg_frames = 5
-                bkg_range  = bkgLevel + 0.11
+                bkg_frames = 2
+                bkg_range  = bkgLevel + 0.09
 
                 if (len(count_rate_history) >= bkg_frames) and (builtin_max(count_rate_history[-bkg_frames:]) < bkg_range):
                     print 'background reached'
