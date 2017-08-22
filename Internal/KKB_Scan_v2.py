@@ -1605,8 +1605,9 @@ def btnPlot_clicked():
     Plot2.set_log_y_on(True)
         
     Plot2.set_marker_on(True)      
-    plotXMax = Par('float', q[-1])
-    Plot2.x_range = [1e-6, plotXMax.value]
+#    plotXMax = Par('float', q[-1])
+#    Plot2.x_range = [1e-6, plotXMax.value]
+    Plot2.x_range = [1e-6, q[-1]]
     
         
 def convert2q(angles, reference, wavelength):
