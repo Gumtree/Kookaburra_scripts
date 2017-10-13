@@ -20,6 +20,11 @@ import time
 
 from Internal import sample_stage
 
+'''
+    Disable dataset caching
+'''
+DatasetFactory.__cache_enabled__ = False
+
 SINGLE_TYPE = SWT.SINGLE
 SAVE_TYPE = SWT.SAVE
 MULTI_TYPE = SWT.MULTI
@@ -1607,7 +1612,8 @@ def btnPlot_clicked():
     Plot2.set_marker_on(True)      
 #    plotXMax = Par('float', q[-1])
 #    Plot2.x_range = [1e-6, plotXMax.value]
-    Plot2.x_range = [1e-6, q[-1]]
+    if q[-1] > 1e-6 :
+        Plot2.x_range = [1e-6, q[-1]]
     
         
 def convert2q(angles, reference, wavelength):
