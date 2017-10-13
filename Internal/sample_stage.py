@@ -90,7 +90,7 @@ class AbstractSampleStage():
 
 class KKB05cells(AbstractSampleStage):
     name = "KKB 5 Cells"
-    in_service = True
+    in_service = False
     index_samz_pairs = [
                         ('1', 35.5), 
                         ('2', 181), 
@@ -98,6 +98,21 @@ class KKB05cells(AbstractSampleStage):
                         ('4', 472),
                         ('5', 617),
                         ]
+    
+class KKB05Roundcells(AbstractSampleStage):
+    name = "KKB 5 Round Cells"
+    in_service = True
+    index_samz_pairs = [
+                        ('1', 31), 
+                        ('2', 176.5), 
+                        ('3', 322), 
+                        ('4', 467.5),
+                        ('5', 613),
+                        ]
+
+
+
+
 
 
 class Quokka5Cells15mmAperture(AbstractSampleStage):

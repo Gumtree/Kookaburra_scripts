@@ -857,6 +857,7 @@ class ReductionDataset:
         self.gDQv          = float(ds['entry1/instrument/crystal/gDQv'])
         self.ScanVariable  = str(ds['entry1/instrument/crystal/scan_variable'])
         self.TimeStamp     = list(ds['entry1/time_stamp'])
+
         
         
         
@@ -885,6 +886,32 @@ class ReductionDataset:
         
         start_time         = str(ds['entry1/start_time'])
         print 'start time: ', start_time
+        
+        sample_z = list(ds['entry1/sample/samz'])
+        sz = sample_z[0]
+        print 'Sample Z: ', str(sz)
+        if not ((sz >= 30 and sz <= 38) or 
+                (sz >=176 and sz <=184) or 
+                (sz >=321 and sz <= 328) or
+                (sz >=467 and sz <= 475) or 
+                (sz >=612 and sz <= 620)):  
+            print 'Sample Z: ', str(sz)
+            print ''
+            print ''
+            print 'WARNING SAMZ'
+            print ''
+            print ''
+            print ''
+            
+        
+        
+        
+        #30 to 33 
+        #180 to 190
+        #320 to 330
+        #460 to 470
+        #515 to 525
+        
         
 
   
