@@ -29,6 +29,8 @@ run_mode = $entry/run_mode
 sample_name = $entry/sample/name
 sample_short_title = $entry/sample/short_title
 sample_description = $entry/sample/description
+sample_thickness = $entry/sample/thickness
+samz = $entry/sample/samz
 run_number = $entry/data/run_number
 
 sh1 = $entry/instrument/aperture/sh1
@@ -53,6 +55,18 @@ my = $entry/instrument/crystal/my
 pom = $entry/instrument/crystal/pom 
 ptz = $entry/instrument/crystal/ptz 
 wavelength = $entry/instrument/crystal/wavelength 
+pmchi = $entry/instrument/crystal/pmchi
+pmom = $entry/instrument/crystal/pmom
+bex = $entry/instrument/crystal/bex
+m1chi = $entry/instrument/crystal/m1chi
+m1x = $entry/instrument/crystal/m1x
+m1om = $entry/instrument/crystal/m1om
+m2chi = $entry/instrument/crystal/m2chi
+m2x = $entry/instrument/crystal/m2x
+m2y = $entry/instrument/crystal/m2y
+m2om = $entry/instrument/crystal/m2om
+mdet = $entry/instrument/crystal/mdet
+scan_variable = $entry/instrument/crystal/scan_variable
 
 RCollZ = $entry/instrument/crystal/RCollZ 
 rco = $entry/instrument/crystal/rco 
@@ -111,4 +125,15 @@ tc1_sensorD = $entry/sample/tc1/sensor/sensorValueD
 magnetrot = $entry/sample/magnetrot/sensor
 
 hmm = $entry/data/hmm_xy
-scanVariable = entry1/instrument/crystal/m2om
+scanVariable = $entry/instrument/crystal/m2om
+save_count = $entry/experiment/save_count
+DataType = $entry/data/DataType
+
+ss1vg = $entry/instrument/slits/gaps/ss1vg
+ss1hg = $entry/instrument/slits/gaps/ss1hg
+ss1vo = $entry/instrument/slits/gaps/ss1vo
+ss1ho = $entry/instrument/slits/gaps/ss1ho
+ss2vg = $entry/instrument/slits/gaps/ss2vg
+ss2hg = $entry/instrument/slits/gaps/ss2hg
+ss2vo = $entry/instrument/slits/gaps/ss2vo
+ss2ho = $entry/instrument/slits/gaps/ss2ho
