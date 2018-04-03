@@ -1421,14 +1421,19 @@ class ReductionDataset:
             
             preQ = float('nan')
             for i in xrange(len(self.Qvals)):
-                newQ = self.Qvals[i]
                 
-                if preQ == newQ:
-                    doublepoints +=1
-                    doublepointsi.append(i)
-                if preQ != newQ:
-                    fp.write("%15.6g %15.3f %15.3f %15.6g %15.6g %15.6g" % (newQ, self.DetCtr[i], self.ErrDetCtr[i], -gdqv, -gdqv, -gdqv) + LE)
-                    preQ = newQ
+                # nest line is only temporary instead of grey text below. 
+                # trying to get rid of throwing out double points
+                fp.write("%15.6g %15.3f %15.3f %15.6g %15.6g %15.6g" % (self.Qvals[i], self.DetCtr[i], self.ErrDetCtr[i], -gdqv, -gdqv, -gdqv) + LE)
+                
+                
+                #newQ = self.Qvals[i]
+                #if preQ == newQ:
+                #    doublepoints +=1
+                #    doublepointsi.append(i)
+                #if preQ != newQ:
+                #    fp.write("%15.6g %15.3f %15.3f %15.6g %15.6g %15.6g" % (newQ, self.DetCtr[i], self.ErrDetCtr[i], -gdqv, -gdqv, -gdqv) + LE)
+                #    preQ = newQ
             
                    
             fp.write("AMBIENT BACKGROUND: %g" % self.SampleBkg + LE)

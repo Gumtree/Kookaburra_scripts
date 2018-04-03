@@ -88,6 +88,30 @@ class AbstractSampleStage():
 # this is right in the middle with 1mm gap on each side 
 # December 2015
 
+
+class KKB06cells(AbstractSampleStage):
+    name = "KKB 6 Cells Tumbler"
+    in_service = True
+    index_samz_pairs = [
+                        ('1', 61.1),
+                        ('2', 165.8), 
+                        ('3', 271.1), 
+                        ('4', 376.3), 
+                        ('5', 481.5),
+                        ('6', 586.7),                       
+                        ]
+    
+class KKB05Roundcells(AbstractSampleStage):
+    name = "KKB 5 Round Cells"
+    in_service = False
+    index_samz_pairs = [
+                        ('1', 31), 
+                        ('2', 176.5), 
+                        ('3', 322), 
+                        ('4', 467.5),
+                        ('5', 613),
+                        ]
+    
 class KKB05cells(AbstractSampleStage):
     name = "KKB 5 Cells"
     in_service = False
@@ -98,25 +122,14 @@ class KKB05cells(AbstractSampleStage):
                         ('4', 472),
                         ('5', 617),
                         ]
-    
-class KKB05Roundcells(AbstractSampleStage):
-    name = "KKB 5 Round Cells"
-    in_service = True
-    index_samz_pairs = [
-                        ('1', 31), 
-                        ('2', 176.5), 
-                        ('3', 322), 
-                        ('4', 467.5),
-                        ('5', 613),
-                        ]
 
 
 
 
 
 
-class Quokka5Cells15mmAperture(AbstractSampleStage):
-    name = "QKK 5 Cells"
+class SANS_Demountable_12mmAperture(AbstractSampleStage):
+    name = "SANS Demountable 5 Cells"
     in_service = False
     index_samz_pairs = [
                         ('1', 37.0),
@@ -125,7 +138,29 @@ class Quokka5Cells15mmAperture(AbstractSampleStage):
                         ('4', 474.0),
                         ('5', 619.0),
                         ]
+    
+class SANS_Hellma_10mmAperture(AbstractSampleStage):
+    name = "SANS Hellma 5 Cells"
+    in_service = False
+    index_samz_pairs = [
+                        ('1', 33.0),
+                        ('2', 178.5),
+                        ('3', 324.0),
+                        ('4', 469.5),
+                        ('5', 615.0),
+                        ]
 
+class Quokka5Cells15mmAperture(AbstractSampleStage):
+    name = "QKK 5 Cells old"
+    in_service = False
+    index_samz_pairs = [
+                        ('1', 37.0),
+                        ('2', 183.0),
+                        ('3', 327.0), # CHECK TROUBLESOME
+                        ('4', 474.0),
+                        ('5', 619.0),
+                        ]
+    
 class KKB16Cells(AbstractSampleStage):
     name = "KKB 16 Cells"
     in_service = False

@@ -954,6 +954,14 @@ def getScan():
                 
     return scan
 
+def wait_for_idle():
+    c_time = time.time()
+    while not sics.getSicsController().getServerStatus().equals(ServerStatus.EAGER_TO_EXECUTE):
+        time.sleep(0.1)
+        if time.time() - c_time > 5:
+            serverStatus = sics.get_status()
+            c_time = time.time()
+        
 def startScan(configModel):
     
     ''' check instrument ready '''
@@ -1114,8 +1122,9 @@ def startScan(configModel):
     sics.execute(dc)
     
     time.sleep(5)
-    while not sicsController.getServerStatus().equals(ServerStatus.EAGER_TO_EXECUTE):
-        time.sleep(0.1)
+    wait_for_idle()
+#    while not sics.get_status().equals(ServerStatus.EAGER_TO_EXECUTE):
+#        time.sleep(0.5)
     
     '''
     sics.execute('run ss1u %.2f' % ss1u)
@@ -1161,8 +1170,9 @@ def startScan(configModel):
             sics.execute('run samz %.2f' % samz)
             # sics.execute('prun samz 2' % samz) !!!
             time.sleep(1)
-            while not sicsController.getServerStatus().equals(ServerStatus.EAGER_TO_EXECUTE):
-                time.sleep(0.1)
+            wait_for_idle()
+#            while not sics.get_status().equals(ServerStatus.EAGER_TO_EXECUTE):
+#                time.sleep(0.5)
 
         sics.execute('newfile HISTOGRAM_XYT')
         # sics.execute('autosave 60') # 60 seconds
@@ -1174,8 +1184,9 @@ def startScan(configModel):
             time.sleep(1)
             sics.execute('histmem start')
             time.sleep(5)
-            while not sicsController.getServerStatus().equals(ServerStatus.EAGER_TO_EXECUTE):
-                time.sleep(0.1)
+            wait_for_idle()
+#            while not sics.get_status().equals(ServerStatus.EAGER_TO_EXECUTE):
+#                time.sleep(0.5)
             sics.execute('histmem stop')
         
         print 'frames:', len(scan['angles'])
@@ -1192,8 +1203,9 @@ def startScan(configModel):
             # sics.drive(scanVariable, float(angle))
             sics.execute('drive %s %.6f' % (scanVariable, angle))
             time.sleep(10)
-            while not sicsController.getServerStatus().equals(ServerStatus.EAGER_TO_EXECUTE):
-                time.sleep(0.1)
+            wait_for_idle()
+#            while not sics.get_status().equals(ServerStatus.EAGER_TO_EXECUTE):
+#                time.sleep(0.5)
            
             print 'drive done'
             
@@ -1209,7 +1221,7 @@ def startScan(configModel):
                 sics.execute('histmem ba undermintime ba_maxdetcount')
 
                 print 'histmem start'
-                sics.execute('histmem start block')
+                sics.execute('histmem start')
                 
                 time0 = time.time()
                 while sicsController.getServerStatus().equals(ServerStatus.EAGER_TO_EXECUTE):
@@ -1217,11 +1229,12 @@ def startScan(configModel):
                         print 'WARNING: HM may not have started counting. Gumtree will save anyway.'
                         break 
                     else:
-                        time.sleep(0.1)
+                        time.sleep(0.5)
 
                 time0 = time.time()
-                while not sicsController.getServerStatus().equals(ServerStatus.EAGER_TO_EXECUTE):
-                    time.sleep(0.1)
+                wait_for_idle()
+#                while not sics.get_status().equals(ServerStatus.EAGER_TO_EXECUTE):
+#                    time.sleep(0.5)
                         
                 print 'time counted (estimate):', float(time.time() - time0)
                 
@@ -1243,6 +1256,7 @@ def startScan(configModel):
                         time.sleep(configModel.min_time)
                         
                         count_roi = 0
+                        t0 = time.time()
                         while not sicsController.getServerStatus().equals(ServerStatus.EAGER_TO_EXECUTE):
                             try:
                                 count_roi = int(sicsext.runCommand('hmm configure num_events_filled_to_count_roi'))
@@ -1258,12 +1272,16 @@ def startScan(configModel):
                                 pass
                                 
                             time.sleep(0.5)
+                            if time.time() - t0 > 5:
+                                serverStatus = sics.get_status()
+                                t0 = time.time()
                             
                         break
                     
                     else:
-                        while not sicsController.getServerStatus().equals(ServerStatus.EAGER_TO_EXECUTE):
-                            time.sleep(0.1)
+                        wait_for_idle()
+#                        while not sics.get_status().equals(ServerStatus.EAGER_TO_EXECUTE):
+#                            time.sleep(0.5)
             
                         valid = False
                         for i in xrange(10):

@@ -40,15 +40,12 @@ combine_tube4.title = '   Tube 4'
 combine_tube6 = Par('bool', False)
 combine_tube6.title = '   Tube 6'
 
-combine_tube7 = Par('bool', False)
-combine_tube7.title = '   Tube 7'
-
 
 g0 = Group('Main Detector')
 g0.numColumns = 10
 g0.add(combine_mode,
        combine_tube0, combine_tube1, combine_tube2, 
-       combine_tube3, combine_tube4, combine_tube6, combine_tube7)
+       combine_tube3, combine_tube4, combine_tube6)
 
 check_tube9 = Par('bool', False)
 check_tube9.title = ' Tube 9: Si (311)'
@@ -69,8 +66,7 @@ scan_variable = Par('string', 'm2om [deg]', options = [
     'ss1u [mm]', 'ss1d [mm]', 'ss1l [mm]', 'ss1r [mm]',
     'ss2u [mm]', 'ss2d [mm]', 'ss2l [mm]', 'ss2r [mm]',
     'ss1hg [mm]', 'ss1ho [mm]', 'ss1vg [mm]', 'ss1vo [mm]',
-    'ss2hg [mm]', 'ss2ho [mm]', 'ss2vg [mm]', 'ss2vo [mm]', 
-    'index'])
+    'ss2hg [mm]', 'ss2ho [mm]', 'ss2vg [mm]', 'ss2vo [mm]'])
 
 scan_variable.title = 'Scan Variable'
       
@@ -80,7 +76,7 @@ scan_variable_sorting.title = 'Sort Scan Variable'
 convert2q = Par('bool', False)
 convert2q.title = 'Convert to q'
 
-use_beammonitor = Par('bool', False)
+use_beammonitor = Par('bool', True)
 use_beammonitor.title = 'Use Beam Monitor'
 
 g2 = Group('Plot & Export Settings')
@@ -207,24 +203,19 @@ def proc_fn(path):
     ds.__iDictionary__.addEntry('bm1_counts', 'entry1/monitor/bm1_counts')
     ds.__iDictionary__.addEntry('bm1_time', 'entry1/monitor/bm1_time')
     ds.__iDictionary__.addEntry('samplename', 'entry1/sample/name')
-    ds.__iDictionary__.addEntry('sampledescription', 'entry1/sample/description')
+    ds.__iDictionary__.addEntry('sampledescription', 'entry1/sample/description')     
     ds.__iDictionary__.addEntry('MainDeadTime', 'entry1/instrument/detector/MainDeadTime')
-    ds.__iDictionary__.addEntry('TransDeadTime', 'entry1/instrument/detector/TransDeadTime')
-     
+    ds.__iDictionary__.addEntry('TransDeadTime', 'entry1/instrument/detector/TransDeadTime')  
+    
     for i in xrange(len(ds.time)):        
         if ds.time[i] < 0.5:
             ds.time[i] = float('inf')
 
     
-    
     scanVariable = str(scan_variable.value)
+    scanVariable = scanVariable[:scanVariable.find(' ')]
+    scanVariable = ds[scanVariable]
     
-    if scanVariable =='index':
-        scanVariable = range(len(ds.m2om))
-        
-    else:
-        scanVariable = scanVariable[:scanVariable.find(' ')]
-        scanVariable = ds[scanVariable]
     
     
     samplename = str(ds.samplename) 
@@ -260,9 +251,7 @@ def proc_fn(path):
     if combine_tube4.value:
         tids.append(4)
     if combine_tube6.value:
-        tids.append(6) # this just says how many tubes to combine
-    if combine_tube7.value:
-        tids.append(7)
+        tids.append(6) # this just says how many tubes to combiness
     
     
   # START PLOTTING  

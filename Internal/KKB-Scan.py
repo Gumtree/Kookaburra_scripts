@@ -1050,7 +1050,7 @@ def startScan(configModel):
     sics.execute(dc)
     
     time.sleep(5)
-    while not sicsController.getServerStatus().equals(ServerStatus.EAGER_TO_EXECUTE):
+    while not sics.get_status().equals(ServerStatus.EAGER_TO_EXECUTE):
         time.sleep(0.1)
     
     '''
@@ -1188,7 +1188,7 @@ def startScan(configModel):
             sics.execute('run samz %.2f' % samz)
             # sics.execute('prun samz 2' % samz) !!!
             time.sleep(1)
-            while not sicsController.getServerStatus().equals(ServerStatus.EAGER_TO_EXECUTE):
+            while not sics.get_status().equals(ServerStatus.EAGER_TO_EXECUTE):
                 time.sleep(0.1)
 
         sics.execute('newfile HISTOGRAM_XYT')
@@ -1201,7 +1201,7 @@ def startScan(configModel):
             time.sleep(1)
             sics.execute('histmem start')
             time.sleep(5)
-            while not sicsController.getServerStatus().equals(ServerStatus.EAGER_TO_EXECUTE):
+            while not sics.get_status().equals(ServerStatus.EAGER_TO_EXECUTE):
                 time.sleep(0.1)
             sics.execute('histmem stop')
         
@@ -1219,7 +1219,7 @@ def startScan(configModel):
             # sics.drive(scanVariable, float(angle))
             sics.execute('drive %s %.6f' % (scanVariable, angle))
             time.sleep(10)
-            while not sicsController.getServerStatus().equals(ServerStatus.EAGER_TO_EXECUTE):
+            while not sics.get_status().equals(ServerStatus.EAGER_TO_EXECUTE):
                 time.sleep(0.1)
            
             print 'drive done'
@@ -1239,7 +1239,7 @@ def startScan(configModel):
                 sics.execute('histmem start block')
                 
                 time0 = time.time()
-                while sicsController.getServerStatus().equals(ServerStatus.EAGER_TO_EXECUTE):
+                while sics.get_status().equals(ServerStatus.EAGER_TO_EXECUTE):
                     if time.time() - time0 > 15.0:
                         print 'WARNING: HM may not have started counting. Gumtree will save anyway.'
                         break 
@@ -1247,7 +1247,7 @@ def startScan(configModel):
                         time.sleep(0.1)
 
                 time0 = time.time()
-                while not sicsController.getServerStatus().equals(ServerStatus.EAGER_TO_EXECUTE):
+                while not sics.get_status().equals(ServerStatus.EAGER_TO_EXECUTE):
                     time.sleep(0.1)
                         
                 print 'time counted (estimate):', float(time.time() - time0)
@@ -1270,7 +1270,7 @@ def startScan(configModel):
                         time.sleep(configModel.min_time)
                         
                         count_roi = 0
-                        while not sicsController.getServerStatus().equals(ServerStatus.EAGER_TO_EXECUTE):
+                        while not sics.get_status().equals(ServerStatus.EAGER_TO_EXECUTE):
                             try:
                                 count_roi = int(sicsext.runCommand('hmm configure num_events_filled_to_count_roi'))
                                 # print count_roi
@@ -1289,7 +1289,7 @@ def startScan(configModel):
                         break
                     
                     else:
-                        while not sicsController.getServerStatus().equals(ServerStatus.EAGER_TO_EXECUTE):
+                        while not sics.get_status().equals(ServerStatus.EAGER_TO_EXECUTE):
                             time.sleep(0.1)
             
                         valid = False

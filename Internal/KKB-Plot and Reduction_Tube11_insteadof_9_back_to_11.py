@@ -527,9 +527,12 @@ def reduceStitchedFiles():
                 ds.Qvals_cut.append(ds.Qvals[i])
                 ds.DetCtr_cut.append(ds.DetCtr[i])
                 ds.ErrDetCtr_cut.append(ds.ErrDetCtr[i])
-        ds.SaveAbs_cut(path + filename + '-abs_cut.dat')   
+        ds.SaveAbs_cut(path + filename + '_' + ds.SampleName + '-abs_cut.dat')
+        #ds.SaveAbs_cut(path + filename + '-abs_cut.dat')   
+        
+
     
-    ds.SaveAbs(path + filename + '-abs.dat')
+    ds.SaveAbs(path + filename + '_' + ds.SampleName + '-abs.dat')
     #ds.SaveAbs(path + filename + samplename + '-abs.dat')
     
     PlotDataset_log(Plot3, ds, 'ABS', q_cut)
@@ -889,7 +892,7 @@ class ReductionDataset:
         
         sample_z = list(ds['entry1/sample/samz'])
         sz = sample_z[0]
-        print 'Sample Z: ', str(sz)
+        #print 'Sample Z: ', str(sz)
         if not ((sz >= 30 and sz <= 38) or 
                 (sz >=176 and sz <=184) or 
                 (sz >=321 and sz <= 328) or
@@ -902,6 +905,8 @@ class ReductionDataset:
             print ''
             print ''
             print ''
+            
+
             
         
         
@@ -1020,6 +1025,16 @@ class ReductionDataset:
                self.DetCtr[i]    = self.DetCtr[i]    * f
                self.ErrDetCtr[i] = self.ErrDetCtr[i] * f
                self.TransCtr[i]  = self.TransCtr[i]  * f
+               
+        # read out sensor value A
+               
+        try:            
+            tempA = list(ds['entry1/sample/tc2/sensor/sensorValueA'])
+            tempB = list(ds['entry1/sample/tc2/sensor/sensorValueB'])
+            print 'SensorValues: ', tempA[0], tempB[0]
+            print ''
+        except:
+            pass
   
      # CALCULATE TIME OF THE MEASUREMENT
     def MeasurementTime(self):   
