@@ -1,6 +1,6 @@
 
 __script__.title = 'KKB Measurement Script'
-__script__.version = '2.1'
+__script__.version = '2.1 2017-07-11 saved as KKB_scan'
 
 from gumpy.commons import sics
 from org.gumtree.gumnix.sics.control import ServerStatus
@@ -503,6 +503,7 @@ def runTimeEstimation():
         try:
             rate = sample(a0, r0, a1[i])
             time = c1[i] / rate
+
             
             if time < tMin:
                 total += tMin
@@ -510,13 +511,20 @@ def runTimeEstimation():
                 total += t1[i]
             else:
                 total += time
-            
+                
+            #print ("angle: " + str(a1[i]) 
+            #        + " expected counts: " + str(c1[i]) 
+            #        + " rate:" + str(rate) 
+            #        + " time:" + str(time) 
+            #        + " total:" + str(total))
         except ValueError as e:
             if e.message == "OutOfRange":
                 total += t1[i] # add max time
             else:
                 raise
     
+    total += int(len(a1) * 25) # 25 seconds for each move
+
     txtTimeEstimation.value = int(total / 60.0)
 
 def sample(x0, y0, x1):
