@@ -1236,29 +1236,29 @@ def startScan(configModel):
     '''
         
     # drive sample environment devices
-    print 'check sample envirment setup'
+    slog('check sample envirment setup')
     multiDev = {}
     se_wait = 0
     if configModel.se_enabled1:
-        print 'sample controller 1 is enabled'
+        slog('sample controller 1 is enabled')
         multiDev[configModel.se_ctr1] = configModel.se_pos1
         if configModel.se_wait1 > se_wait:
             se_wait = configModel.se_wait1
     if configModel.se_enabled2:
-        print 'sample controller 2 is enabled'
+        slog('sample controller 2 is enabled')
         multiDev[configModel.se_ctr2] = configModel.se_pos2
         if configModel.se_wait2 > se_wait:
             se_wait = configModel.se_wait2
     if configModel.se_enabled3:
-        print 'sample controller 3 is enabled'
+        slog('sample controller 3 is enabled')
         multiDev[configModel.se_ctr3] = configModel.se_pos3
         if configModel.se_wait3 > se_wait:
             se_wait = configModel.se_wait3
     if len(multiDev) > 0:
-        print 'drive sample environment ' + str(multiDev)
+        slog('drive sample environment ' + str(multiDev))
         sics.multiDrive(multiDev)
         if se_wait > 0:
-            print 'wait for ' + str(se_wait) + ' seconds'
+            slog('wait for ' + str(se_wait) + ' seconds')
             time.sleep(se_wait)
     
     # load sample positions
