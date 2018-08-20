@@ -656,14 +656,14 @@ def loadConfigurations():
     cnfg_lookup.clear()
     cnfg_lookup.update(finalDict)
     
-    cnfg_options.value = finalNames[0] if finalNames else ''
     cnfg_options.options = finalNames
+    cnfg_options.value = finalNames[0] if finalNames else ''
 #    time.sleep(0.5)
     
             
 def applyConfiguration():
     file = str(cnfg_options.value)
-    if not file:
+    if file is None or file == 'None' or file.strip() == '':
         return
 
     fh = open(cnfg_lookup[file], 'r')
