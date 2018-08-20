@@ -351,6 +351,7 @@ se_ctr2.options = devices
 se_ctr3.options = devices
 
 def toggle_se(id):
+    id = int(id)
     if id == 1:
         flag = se_enabled1.value
         se_ctr1.enabled = flag
@@ -1880,22 +1881,19 @@ class ConfigurationModel:
         se_ctr1.value = self.se_ctr1
         se_pos1.value = self.se_pos1
         se_wait1.value = self.se_wait1
-        if se_enabled1.value:
-            toggle_se(1)
+        toggle_se(1)
 
         se_enabled2.value = self.se_enabled2 
         se_ctr2.value = self.se_ctr2 
         se_pos2.value = self.se_pos2 
         se_wait2.value = self.se_wait2 
-        if se_enabled2.value:
-            toggle_se(2)
+        toggle_se(2)
 
         se_enabled3.value = self.se_enabled3 
         se_ctr3.value = self.se_ctr3 
         se_pos3.value = self.se_pos3 
         se_wait3.value = self.se_wait3 
-        if se_enabled3.value:
-            toggle_se(3)
+        toggle_se(3)
         
         # load sample positions
         scan_sample_position.value = self.sample_position
