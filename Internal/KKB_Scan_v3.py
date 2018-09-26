@@ -1,6 +1,6 @@
 
 __script__.title = 'KKB Measurement Script'
-__script__.version = '3.0'
+__script__.version = '3.1'
 
 from gumpy.commons import sics
 from org.gumtree.gumnix.sics.control import ServerStatus
@@ -16,7 +16,8 @@ from org.eclipse.swt.widgets import FileDialog
 from org.eclipse.swt import SWT
 from org.eclipse.swt.widgets import Display
 from java.io import File
-import time
+from gumpy.nexus.fitting import Fitting, GAUSSIAN_FITTING
+import math
 
 from Internal import sample_stage
 
@@ -913,13 +914,75 @@ g0.numColumns = 2
 g0.add(pss_ss2vg, pss_ss2vo, pss_ss2hg, pss_ss2ho)
 ################################# SLIT 2 END ##########################################################
 
+################################# CURVE FITTING START ##########################################################
+
+g_fit = Group('Fitting')
+g_fit.numColumns = 2
+#data_name = Par('string', 'total_counts', \
+#               options = ['total_counts', 'bm1_counts', 'bm2_counts'])
+#normalise = Par('bool', True)
+#axis_name = Par('string', '')
+#axis_name.enabled = True
+#auto_fit = Par('bool', False)
+#fit_min = Par('float', 'NaN')
+#fit_min.title = 'min x'
+#fit_max = Par('float', 'NaN')
+#fit_max.title = 'max x'
+peak_pos = Par('float', 'NaN')
+peak_pos.title = 'fitting peak position'
+FWHM = Par('float', 'NaN')
+FWHM.title = 'fitting FWHM'
+fact = Act('fit_curve()', 'Fit Again')
+fact.colspan = 2
+#offset_done = Par('bool', False)
+#act3 = Act('offset_s2()', 'Set Device Zero Offset')
+g_fit.add(peak_pos, FWHM, fact)
+
+def fit_curve():
+    global Plot1
+    ds = Plot1.ds
+    if len(ds) == 0:
+        log('Error: no curve to fit in Plot1.\n')
+        return
+    for d in ds:
+        if d.title == 'fitting':
+            Plot1.remove_dataset(d)
+    d0 = ds[0]
+    fitting = Fitting(GAUSSIAN_FITTING)
+    try:
+        fitting.set_histogram(d0)
+        fitting.fitter.setResolutionMultiple(50)
+        val = peak_pos.value
+        if val == val:
+            fitting.set_param('mean', val)
+        val = FWHM.value
+        if val == val:
+            fitting.set_param('sigma', math.fabs(val / 2.35482))
+        res = fitting.fit()
+        res.var[:] = 0
+        res.title = 'fitting'
+        Plot1.add_dataset(res)
+        Plot1.pv.getPlot().setCurveMarkerVisible(Plot1.__get_NXseries__(res), False)
+        mean = fitting.params['mean']
+        mean_err = fitting.errors['mean']
+        FWHM.value = 2.35482 * math.fabs(fitting.params['sigma'])
+        FWHM_err = 5.54518 * math.fabs(fitting.errors['sigma'])
+        log('POS_OF_PEAK=' + str(mean) + ' +/- ' + str(mean_err))
+        log('FWHM=' + str(FWHM.value) + ' +/- ' + str(FWHM_err))
+        log('Chi2 = ' + str(fitting.fitter.getQuality()))
+        peak_pos.value = fitting.mean
+#        print fitting.params
+    except:
+#        traceback.print_exc(file = sys.stdout)
+        log('can not fit\n')
+
+################################# CURVE FITTING END ##########################################################
 
 def waitUntilSicsIs(status, dt=0.2):
     controller = sics.getSicsController()
     timeout = 5
     while True:
         sics.handleInterrupt()
-
         count = 0
         while not controller.getServerStatus().equals(status) and count < timeout:
             time.sleep(dt)
@@ -929,7 +992,6 @@ def waitUntilSicsIs(status, dt=0.2):
             break
         else:
             controller.refreshServerStatus()
-
     sics.handleInterrupt()
     
 def setStepTitles():
@@ -1462,6 +1524,9 @@ def startScan(configModel):
     
     sics.execute('histmem ba disable')
     
+#    print 'fit the curve'
+#    fit_curve()
+    
     print 'done'
     print
 
@@ -1714,7 +1779,6 @@ def btnPlot_clicked():
         
         data.title = 'Tubes ' + str(tids)
         
-        
         Plot1.set_dataset(data)
         Plot1.set_mouse_follower_precision(6, 2, 2)
         Plot1.title = basename + ' (combined):  ' + samplename
@@ -1740,7 +1804,8 @@ def btnPlot_clicked():
     peakangle = xMax
     q = convert2q(scanVariable, peakangle, ds.wavelength)
         
-    data.axes[0] = q[:]
+    data = Dataset(data, axes=[q[:]])
+#    data.axes[0] = q[:]
     Plot2.set_dataset(data)
     Plot2.set_mouse_follower_precision(6, 2, 2)
         
@@ -1759,6 +1824,7 @@ def btnPlot_clicked():
     if q[-1] > 1e-6 :
         Plot2.x_range = [1e-6, q[-1]]
     
+    fit_curve()
         
 def convert2q(angles, reference, wavelength):
     if wavelength is list:
