@@ -914,6 +914,24 @@ g0.add(pss_ss2vg, pss_ss2vo, pss_ss2hg, pss_ss2ho)
 ################################# SLIT 2 END ##########################################################
 
 
+def waitUntilSicsIs(status, dt=0.2):
+    controller = sics.getSicsController()
+    timeout = 5
+    while True:
+        sics.handleInterrupt()
+
+        count = 0
+        while not controller.getServerStatus().equals(status) and count < timeout:
+            time.sleep(dt)
+            count += dt
+        
+        if controller.getServerStatus().equals(status):
+            break
+        else:
+            controller.refreshServerStatus()
+
+    sics.handleInterrupt()
+    
 def setStepTitles():
     if logscale_position.value:
         for stepInfoItem in stepInfo[1:]:
@@ -1220,8 +1238,7 @@ def startScan(configModel):
     sics.execute(dc)
     
     time.sleep(5)
-    while not sicsController.getServerStatus().equals(ServerStatus.EAGER_TO_EXECUTE):
-        time.sleep(0.1)
+    waitUntilSicsIs(ServerStatus.EAGER_TO_EXECUTE)
     
     '''
     sics.execute('run ss1u %.2f' % ss1u)
@@ -1293,8 +1310,7 @@ def startScan(configModel):
             sics.execute('run samz %.2f' % samz)
             # sics.execute('prun samz 2' % samz) !!!
             time.sleep(1)
-            while not sicsController.getServerStatus().equals(ServerStatus.EAGER_TO_EXECUTE):
-                time.sleep(0.1)
+            waitUntilSicsIs(ServerStatus.EAGER_TO_EXECUTE)
 
         sics.execute('newfile HISTOGRAM_XYT')
         # sics.execute('autosave 60') # 60 seconds
@@ -1306,8 +1322,7 @@ def startScan(configModel):
             time.sleep(1)
             sics.execute('histmem start')
             time.sleep(5)
-            while not sicsController.getServerStatus().equals(ServerStatus.EAGER_TO_EXECUTE):
-                time.sleep(0.1)
+            waitUntilSicsIs(ServerStatus.EAGER_TO_EXECUTE)
             sics.execute('histmem stop')
         
         print 'frames:', len(scan['angles'])
@@ -1324,8 +1339,7 @@ def startScan(configModel):
             # sics.drive(scanVariable, float(angle))
             sics.execute('drive %s %.6f' % (scanVariable, angle))
             time.sleep(10)
-            while not sicsController.getServerStatus().equals(ServerStatus.EAGER_TO_EXECUTE):
-                time.sleep(0.1)
+            waitUntilSicsIs(ServerStatus.EAGER_TO_EXECUTE)
            
             print 'drive done'
             
@@ -1352,8 +1366,7 @@ def startScan(configModel):
                         time.sleep(0.1)
 
                 time0 = time.time()
-                while not sicsController.getServerStatus().equals(ServerStatus.EAGER_TO_EXECUTE):
-                    time.sleep(0.1)
+                waitUntilSicsIs(ServerStatus.EAGER_TO_EXECUTE)
                         
                 print 'time counted (estimate):', float(time.time() - time0)
                 
@@ -1394,8 +1407,7 @@ def startScan(configModel):
                         break
                     
                     else:
-                        while not sicsController.getServerStatus().equals(ServerStatus.EAGER_TO_EXECUTE):
-                            time.sleep(0.1)
+                        waitUntilSicsIs(ServerStatus.EAGER_TO_EXECUTE)
             
                         valid = False
                         for i in xrange(10):
