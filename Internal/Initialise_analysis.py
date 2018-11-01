@@ -218,3 +218,5 @@ __dispose_listener__.widgetDisposed = __dispose_all__
 
 __display_run__ = __Display_Runnable__()
 Display.getDefault().asyncExec(__display_run__)
+
+load_script('KKB-Plot and Reduction.py')
