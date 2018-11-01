@@ -8,7 +8,7 @@ __script__.version = '2.0'
 # 15.6.2017 Allow to reduce the detector range 
 # 15.6. Throw out points below resolution
 # 16.6. Tidy up run time to display in the reduction; tidy up display properties
-
+# 11.7.2018 Save copy before changing deadtime reduction
 
 from math import sqrt, sin, exp
 from datetime import datetime
@@ -329,8 +329,18 @@ def empFilesTake():
     em = LoadNxHdf(emFilePaths)                           
     em.SortAngles()    
     em = RemoveIgnoredRanges(em, empIgnorePts.value)
-    empLevel.value = sum(em.DetCtr[-tailpoints:]) / tailpoints
-    empLevel_Error.value = sum(em.ErrDetCtr[-tailpoints:]) / tailpoints   
+    
+    
+    
+    if bool(negative_steps.value):
+        empLevel.value = sum(em.DetCtr[:tailpoints]) / tailpoints
+        empLevel_Error.value = sum(em.ErrDetCtr[:tailpoints]) / tailpoints 
+    else:
+        empLevel.value = sum(em.DetCtr[-tailpoints:]) / tailpoints
+        empLevel_Error.value = sum(em.ErrDetCtr[-tailpoints:]) / tailpoints 
+    
+    
+    
     em.FindZeroAngle()
     em.DetermineQVals()
     em.MeasurementTime()
@@ -892,6 +902,7 @@ class ReductionDataset:
         
         sample_z = list(ds['entry1/sample/samz'])
         sz = sample_z[0]
+        '''
         #print 'Sample Z: ', str(sz)
         if not ((sz >= 30 and sz <= 38) or 
                 (sz >=176 and sz <=184) or 
@@ -905,6 +916,7 @@ class ReductionDataset:
             print ''
             print ''
             print ''
+        '''
             
 
             
@@ -1449,7 +1461,7 @@ class ReductionDataset:
         
         scale = 1.0 / (self.TransWide * self.Thick * dOmega * emp.PeakVal)                
         
-        #print 'scale:' , scale        
+        print 'scale:' , scale        
         maxq = emp.Qvals[-1]
         for i in xrange(len(self.Qvals)):
             wq = self.Qvals[i]

@@ -1,6 +1,8 @@
 
 __script__.title = 'KKB Overview'
-__script__.version = '1.0'
+__script__.version = '1.1'
+
+# 2018-07-12 include deadtimes
 
 
 
@@ -145,6 +147,16 @@ g0 = Group('Beam Monitor:')
 g0.numColumns = 3
 g0.add(BeamMonitor_tick, Tube6_tick, Tube7_tick)
 
+MainDeadTime_tick = Par('bool', False)
+MainDeadTime_tick.title = '  Main DeadTime'
+
+TransDeadTime_tick = Par('bool', False)
+TransDeadTime_tick.title = '  Trans DeadTime'
+
+g0 = Group('DeadTime:')
+g0.numColumns = 3
+g0.add(MainDeadTime_tick, TransDeadTime_tick)
+
 
 
 export_tick = Par('bool', True)
@@ -286,17 +298,22 @@ def __run_script__(fns):
                 #print 'ds.pmchi', str(ds.pmchi[0])
                 try:
                     data.append(str(ds.pmchi[0]))
+                    print ds.pmchi[0] 
                 except:
                     data.append(str(ds.pmchi))
+                    print ds.pmchi 
                 header.append('pmchi')
+                 
                 
             if pmom_tick.value:                
                 ds.__iDictionary__.addEntry('pmom', 'entry1/instrument/crystal/pmom')
                 #print 'ds.pmom', str(ds.pmom[0])
                 try:
                     data.append(str(ds.pmom[0]))
+                    print ds.pmom[0]
                 except:
                     data.append(str(ds.pmom))
+                    print ds.pmom
                 header.append('pmom')
                 
             if bex_tick.value:                
@@ -547,6 +564,25 @@ def __run_script__(fns):
                 header.append('Tube7_Counts')
                 header.append('Tube7_Time')
                 header.append('Tube7_Rate')
+                
+            if MainDeadTime_tick.value:                
+                ds.__iDictionary__.addEntry('MainDeadTime', 'entry1/instrument/detector/MainDeadTime')
+                #print 'ds.ss1ho', str(ds.ss1ho[0])
+                try:
+                    data.append(str(ds.MainDeadTime[0]))
+                except:
+                    data.append(str(ds.MainDeadTime))
+                header.append('MainDeadTime')
+                #print 'deadtime', str(ds.MainDeadTime)
+            
+            if TransDeadTime_tick.value:                
+                ds.__iDictionary__.addEntry('TransDeadTime', 'entry1/instrument/detector/TransDeadTime')
+                #print 'ds.ss1ho', str(ds.ss1ho[0])
+                try:
+                    data.append(str(ds.TransDeadTime[0]))
+                except:
+                    data.append(str(ds.TransDeadTime))
+                header.append('TransDeadTime')
                 
                 
            

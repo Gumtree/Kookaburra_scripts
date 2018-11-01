@@ -332,4 +332,4 @@ Display.getDefault().asyncExec(__display_run__)
 
 sics.ready = True
 
-load_script('KKB-Plot and Reduction.py')
+#load_script('KKB-Plot and Reduction.py')

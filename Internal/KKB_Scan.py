@@ -974,26 +974,52 @@ def startScan(configModel):
     
     ''' check instrument ready '''
     
+    all_ready = False
     is_ready = False
+    is_shielded = False
+    msg = None
     try:
         is_ready = sics.getValue('/instrument/status/ready').getStringData() == 'TRUE'
+        is_shielded = sics.getValue('/instrument/GreenPolyShield/greenpolyshield').getStringData().lower() == 'in'
+        if not is_ready:
+            if not is_shielded:
+                msg = 'The instrument is not ready and the green polyshield is not applied. ' \
+                    + 'Please get the '\
+                    + 'instrument ready and apply the polyshield. Then click on "Yes" to continue. \n'\
+                    + 'Do you want to continue?'
+            else:
+                msg = 'The instrument is not ready according to the SIS status. ' \
+                    + 'Please get the '\
+                    + 'instrument ready. Then click on "Yes" to continue. \n'\
+                    + 'Do you want to continue?'
+        else:
+            if not is_shielded:
+                msg = 'The green polyshield is not applied. ' \
+                    + 'Please apply the polyshield. Then click on "Yes" to continue. \n'\
+                    + 'Do you want to continue?'
+        all_ready = is_ready and is_shielded
     except:
         pass
-    if not is_ready:
-        is_confirmed = open_question('The instrument is not ready '\
-                    + 'according to the SIS status. Please get the '\
+    if not all_ready:
+        if not msg:
+            msg = 'The instrument is not ready according to the SIS status. ' \
+                    + 'Please get the '\
                     + 'instrument ready. Then click on "Yes" to continue. \n'\
-                    + 'Do you want to continue?')
+                    + 'Do you want to continue?'
+        is_confirmed = open_question(msg)
         if not is_confirmed:
             slog('Instrument is not ready. Quit the scan.')
             return
         else:
             try:
                 is_ready = sics.getValue('/instrument/status/ready').getStringData() == 'TRUE'
+                is_shielded = sics.getValue('/instrument/GreenPolyShield/greenpolyshield').getStringData().lower() == 'in'
             except:
                 pass
             if not is_ready: 
                 slog('scan continued without instrument ready')
+            if not is_shielded:
+                slog('scan continued without green polysheild')
         
     ''' setup '''
     

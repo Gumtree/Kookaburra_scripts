@@ -91,25 +91,92 @@ class AbstractSampleStage():
 
 class KKB06cells(AbstractSampleStage):
     name = "KKB 6 Cells Tumbler"
-    in_service = True
+    in_service = False
     index_samz_pairs = [
-                        ('1', 61.1),
-                        ('2', 165.8), 
-                        ('3', 271.1), 
-                        ('4', 376.3), 
-                        ('5', 481.5),
-                        ('6', 586.7),                       
+                        ('1', 59.5),
+                        ('2', 164.8), 
+                        ('3', 270.1), 
+                        ('4', 375.3), 
+                        ('5', 480.5),
+                        ('6', 585.7),                       
                         ]
+    
+    
+class KKB06cells_Shroud(AbstractSampleStage):
+    name = "KKB 6 Cells Tumbler Shroud"
+    in_service = True
+    index_samz_pairs = [('1', 40.8),
+                        ('2', 146.0), 
+                        ('3', 251.2), 
+                        ('4', 356.4), 
+                        ('5', 461.6),
+                        ('6', 566.8),                       
+                        ]
+                        
+                        
+                        
+                        
+                        #('1', 39.8),
+                        #('2', 145.0), 
+                        #('3', 250.2), 
+                        #('4', 355.4), 
+                        #('5', 460.6),
+                        #('6', 565.8),                       
+                        #]
+    
+    
+class KKB06cells_Shane(AbstractSampleStage):
+    name = "SHANE KKB 6 Cells Tumbler"
+    in_service = False
+    index_samz_pairs = [
+                        ('6_1', 600.0),
+                        ('6_2', 596.0), 
+                        ('6_3', 592.0), 
+                        ('6_4', 588.0), 
+                        ('6_5', 584.0),
+                        ('6_6', 580.0), 
+                        ('6_7', 576.0),
+                        ('6_8', 572.0),
+                             
+                        ('5_1', 495.0),
+                        ('5_2', 491.0), 
+                        ('5_3', 487.0), 
+                        ('5_4', 483.0), 
+                        ('5_5', 479.0),
+                        ('5_6', 475.0),                  
+                        ('5_7', 471.0),
+                        ('5_8', 467.0),  
+                                                
+                        ('4_1', 390.0),
+                        ('4_2', 386.0), 
+                        ('4_3', 382.0), 
+                        ('4_4', 378.0), 
+                        ('4_5', 374.0),
+                        ('4_6', 370.0),                  
+                        ('4_7', 366.0),
+                        ('4_8', 362.0),  
+                        
+                        ('3_1', 285.0),
+                        ('3_2', 281.0), 
+                        ('3_3', 277.0), 
+                        ('3_4', 273.0), 
+                        ('3_5', 269.0),
+                        ('3_6', 265.0),                  
+                        ('3_7', 261.0),
+                        ('3_8', 257.0)  
+                        
+                        
+                        ]    
     
 class KKB05Roundcells(AbstractSampleStage):
     name = "KKB 5 Round Cells"
     in_service = False
     index_samz_pairs = [
-                        ('1', 31), 
-                        ('2', 176.5), 
-                        ('3', 322), 
-                        ('4', 467.5),
-                        ('5', 613),
+                        ('1', 33), 
+                        ('2', 178.5), 
+                        ('3', 324), 
+                        ('4', 469.5),
+                        ('5', 615),
                         ]
     
 class KKB05cells(AbstractSampleStage):
@@ -143,11 +210,11 @@ class SANS_Hellma_10mmAperture(AbstractSampleStage):
     name = "SANS Hellma 5 Cells"
     in_service = False
     index_samz_pairs = [
-                        ('1', 33.0),
-                        ('2', 178.5),
-                        ('3', 324.0),
-                        ('4', 469.5),
-                        ('5', 615.0),
+                        ('1', 35.0),
+                        ('2', 180.5),
+                        ('3', 326.0),
+                        ('4', 471.5),
+                        ('5', 617.0),
                         ]
 
 class Quokka5Cells15mmAperture(AbstractSampleStage):
