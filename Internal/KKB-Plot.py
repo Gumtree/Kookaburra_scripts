@@ -65,7 +65,7 @@ scan_variable = Par('string', 'm2om [deg]', options = [
     'pmom [deg]', 'pmchi [deg]', 
     'm1om [deg]', 'm1chi [deg]', 'm1x [mm]', 
     'm2om [deg]', 'm2chi [deg]', 'm2x [mm]', 'm2y [mm]', 
-    'mdet [mm]','samz [mm]',
+    'mdet [mm]','samz [mm]', 'samx [mm]', 'apsel [mm]',
     'ss1u [mm]', 'ss1d [mm]', 'ss1l [mm]', 'ss1r [mm]',
     'ss2u [mm]', 'ss2d [mm]', 'ss2l [mm]', 'ss2r [mm]',
     'ss1hg [mm]', 'ss1ho [mm]', 'ss1vg [mm]', 'ss1vo [mm]',
