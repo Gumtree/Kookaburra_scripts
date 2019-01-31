@@ -105,12 +105,12 @@ class KKB06cells(AbstractSampleStage):
 class KKB06cells_Shroud(AbstractSampleStage):
     name = "KKB 6 Cells Tumbler Shroud"
     in_service = True
-    index_samz_pairs = [('1', 40.8),
-                        ('2', 146.0), 
-                        ('3', 251.2), 
-                        ('4', 356.4), 
-                        ('5', 461.6),
-                        ('6', 566.8),                       
+    index_samz_pairs = [('1', 42.3),
+                        ('2', 147.5), 
+                        ('3', 252.7), 
+                        ('4', 357.9), 
+                        ('5', 463.1),
+                        ('6', 568.3),                       
                         ]
                         
                         

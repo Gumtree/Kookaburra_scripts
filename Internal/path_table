@@ -31,6 +31,8 @@ sample_short_title = $entry/sample/short_title
 sample_description = $entry/sample/description
 sample_thickness = $entry/sample/thickness
 samz = $entry/sample/samz
+samx = $entry/sample/samx
+apsel = $entry/instrument/slits/apsel
 run_number = $entry/data/run_number
 
 sh1 = $entry/instrument/aperture/sh1
