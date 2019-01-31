@@ -672,7 +672,7 @@ cnfg_lookup = dict()
 cnfg_options = Par('string', '', options=[''], command="applyConfiguration()")
 cnfg_options.title = 'Read'
 
-start_scan = Act('startScan(ConfigurationModel())', '#############   Run Single Scan   #############')
+start_scan = Act('runSingleScan()', '#############   Run Single Scan   #############')
 cnfg_run_btn = Act('runConfigurations()', '#############   Run Multiple Scans   #############')
 
 g0 = Group('Execute Scans')
@@ -778,7 +778,8 @@ def applyConfiguration():
     finally:
         fh.close()
 
-def runConfigurations():    
+def runConfigurations():
+    checkInstrumentReady()    
     for file in cnfg_options.options:
         fh = open(cnfg_lookup[file], 'r')
         try:
@@ -1139,9 +1140,8 @@ def wait_for_idle():
         if time.time() - c_time > 5:
             serverStatus = sics.get_status()
             c_time = time.time()
-        
-def startScan(configModel):
-    
+
+def checkInstrumentReady():
     ''' check instrument ready '''
     
     all_ready = False
@@ -1190,6 +1190,13 @@ def startScan(configModel):
                 slog('scan continued without instrument ready')
             if not is_shielded:
                 slog('scan continued without green polysheild')
+        
+def runSingleScan(): 
+    checkInstrumentReady()
+    startScan(ConfigurationModel())
+        
+def startScan(configModel):
+    
         
     ''' setup '''
     
