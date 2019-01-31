@@ -1150,7 +1150,7 @@ def checkInstrumentReady():
     msg = None
     try:
         is_ready = sics.getValue('/instrument/status/ready').getStringData() == 'TRUE'
-        is_shielded = sics.getValue('/instrument/GreenPolyShield/greenpolyshield').getStringData().lower() == 'in'
+        is_shielded = sics.getValue('/instrument/GreenPolyShield/greenpolyshield').getStringData().lower() == '1'
         if not is_ready:
             if not is_shielded:
                 msg = 'The instrument is not ready and the green polyshield is not applied. ' \
@@ -1183,7 +1183,7 @@ def checkInstrumentReady():
         else:
             try:
                 is_ready = sics.getValue('/instrument/status/ready').getStringData() == 'TRUE'
-                is_shielded = sics.getValue('/instrument/GreenPolyShield/greenpolyshield').getStringData().lower() == 'in'
+                is_shielded = sics.getValue('/instrument/GreenPolyShield/greenpolyshield').getStringData().lower() == '1'
             except:
                 pass
             if not is_ready: 
