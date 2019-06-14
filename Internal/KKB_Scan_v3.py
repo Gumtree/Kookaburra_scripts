@@ -295,12 +295,17 @@ se_ctr1.colspan = 2
 se_ctr1.enabled = False
 
 se_pos1 = Par('float', 0.)
-se_pos1 .title = 'Values'
-se_pos1.colspan = 6
+se_pos1.title = 'Values'
+se_pos1.colspan = 5
 se_pos1.enabled = False
 
+se_cmd1 = Par('string', 'drive', options = ['drive', 'run'])
+se_cmd1.title = 'Command'
+se_cmd1.colspan = 1
+se_cmd1.enabled = False
+
 se_wait1 = Par('int', 0)
-se_wait1 .title = 'Wait'
+se_wait1.title = 'Wait'
 se_wait1.colspan = 1
 se_wait1.enabled = False
 
@@ -315,8 +320,13 @@ se_ctr2.enabled = False
 
 se_pos2 = Par('float', 0.)
 se_pos2 .title = 'Values'
-se_pos2.colspan = 6
+se_pos2.colspan = 5
 se_pos2.enabled = False
+
+se_cmd2 = Par('string', 'drive', options = ['drive', 'run'])
+se_cmd2.title = 'Command'
+se_cmd2.colspan = 1
+se_cmd2.enabled = False
 
 se_wait2 = Par('int', 0)
 se_wait2 .title = 'Wait'
@@ -334,17 +344,22 @@ se_ctr3.enabled = False
 
 se_pos3 = Par('float', 0.)
 se_pos3 .title = 'Values'
-se_pos3.colspan = 6
+se_pos3.colspan = 5
 se_pos3.enabled = False
+
+se_cmd3 = Par('string', 'drive', options = ['drive', 'run'])
+se_cmd3.title = 'Command'
+se_cmd3.colspan = 1
+se_cmd3.enabled = False
 
 se_wait3 = Par('int', 0)
 se_wait3 .title = 'Wait'
 se_wait3.colspan = 1
 se_wait3.enabled = False
 
-gse.add(se_enabled1, se_ctr1, se_pos1, se_wait1,
-        se_enabled2, se_ctr2, se_pos2, se_wait2,
-        se_enabled3, se_ctr3, se_pos3, se_wait3,)
+gse.add(se_enabled1, se_ctr1, se_pos1, se_cmd1, se_wait1,
+        se_enabled2, se_ctr2, se_pos2, se_cmd2, se_wait2,
+        se_enabled3, se_ctr3, se_pos3, se_cmd3, se_wait3,)
 
 devices = sicsext.getDrivables()
 se_ctr1.options = devices
@@ -357,16 +372,19 @@ def toggle_se(id):
         flag = se_enabled1.value
         se_ctr1.enabled = flag
         se_pos1.enabled = flag
+        se_cmd1.enabled = flag
         se_wait1.enabled = flag
     elif id == 2:
         flag = se_enabled2.value
         se_ctr2.enabled = flag
         se_pos2.enabled = flag
+        se_cmd2.enabled = flag
         se_wait2.enabled = flag
     elif id == 3:
         flag = se_enabled3.value
         se_ctr3.enabled = flag
         se_pos3.enabled = flag
+        se_cmd3.enabled = flag
         se_wait3.enabled = flag
     else:
         raise 'illegal index for sample environment'
@@ -1348,30 +1366,39 @@ def startScan(configModel):
     '''
         
     # drive sample environment devices
-    slog('check sample envirment setup')
+    slog('check sample environment setup')
     multiDev = {}
     se_wait = 0
     if configModel.se_enabled1:
         slog('sample controller 1 is enabled')
-        multiDev[configModel.se_ctr1] = configModel.se_pos1
+        if configModel.se_cmd1 == 'drive':
+            multiDev[configModel.se_ctr1] = configModel.se_pos1
+        elif configModel.se_cmd1 == 'run':
+            sics.run(configModel.se_ctr1, configModel.se_pos1)
         if configModel.se_wait1 > se_wait:
             se_wait = configModel.se_wait1
     if configModel.se_enabled2:
         slog('sample controller 2 is enabled')
-        multiDev[configModel.se_ctr2] = configModel.se_pos2
+        if configModel.se_cmd2 == 'drive':
+            multiDev[configModel.se_ctr2] = configModel.se_pos2
+        elif configModel.se_cmd2 == 'run':
+            sics.run(configModel.se_ctr2, configModel.se_pos2)
         if configModel.se_wait2 > se_wait:
             se_wait = configModel.se_wait2
     if configModel.se_enabled3:
         slog('sample controller 3 is enabled')
-        multiDev[configModel.se_ctr3] = configModel.se_pos3
+        if configModel.se_cmd3 == 'drive':
+            multiDev[configModel.se_ctr3] = configModel.se_pos3
+        elif configModel.se_cmd3 == 'run':
+            sics.run(configModel.se_ctr3, configModel.se_pos3)
         if configModel.se_wait3 > se_wait:
             se_wait = configModel.se_wait3
     if len(multiDev) > 0:
         slog('drive sample environment ' + str(multiDev))
         sics.multiDrive(multiDev)
-        if se_wait > 0:
-            slog('wait for ' + str(se_wait) + ' seconds')
-            time.sleep(se_wait)
+    if se_wait > 0:
+        slog('wait for ' + str(se_wait) + ' seconds')
+        time.sleep(se_wait)
     
     # load sample positions
     sample_stage_name = configModel.sample_stage
@@ -1936,16 +1963,19 @@ class ConfigurationModel:
         self.se_enabled1 = bool(se_enabled1.value)
         self.se_ctr1 = str(se_ctr1.value)
         self.se_pos1 = float(se_pos1.value)
+        self.se_cmd1 = str(se_cmd1.value)
         self.se_wait1 = int(se_wait1.value)
 
         self.se_enabled2 = bool(se_enabled2.value)
         self.se_ctr2 = str(se_ctr2.value)
         self.se_pos2 = float(se_pos2.value)
+        self.se_cmd2 = str(se_cmd2.value)
         self.se_wait2 = int(se_wait2.value)
 
         self.se_enabled3 = bool(se_enabled3.value)
         self.se_ctr3 = str(se_ctr3.value)
         self.se_pos3 = float(se_pos3.value)
+        self.se_cmd3 = str(se_cmd3.value)
         self.se_wait3 = int(se_wait3.value)
         
         # load sample positions
@@ -1999,18 +2029,21 @@ class ConfigurationModel:
         se_enabled1.value = self.se_enabled1
         se_ctr1.value = self.se_ctr1
         se_pos1.value = self.se_pos1
+        se_cmd1.value = self.se_cmd1
         se_wait1.value = self.se_wait1
         toggle_se(1)
 
         se_enabled2.value = self.se_enabled2 
         se_ctr2.value = self.se_ctr2 
-        se_pos2.value = self.se_pos2 
+        se_pos2.value = self.se_pos2
+        se_cmd2.value = self.se_cmd2
         se_wait2.value = self.se_wait2 
         toggle_se(2)
 
         se_enabled3.value = self.se_enabled3 
         se_ctr3.value = self.se_ctr3 
-        se_pos3.value = self.se_pos3 
+        se_pos3.value = self.se_pos3
+        se_cmd3.value = self.se_cmd3 
         se_wait3.value = self.se_wait3 
         toggle_se(3)
         
