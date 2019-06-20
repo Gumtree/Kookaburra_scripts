@@ -575,6 +575,7 @@ def reduceStitchedFiles():
                 ds.DetCtr_cut.append(ds.DetCtr[i])
                 ds.ErrDetCtr_cut.append(ds.ErrDetCtr[i])
         ds.SaveAbs_cut(path + filename + '_' + ds.SampleName + '-abs_cut.dat')
+        #ds.SaveAbs_cut(path + filename + '_' + ds.SampleName + '.dat')
         #ds.SaveAbs_cut(path + filename + '-abs_cut.dat')   
         
 
@@ -584,7 +585,7 @@ def reduceStitchedFiles():
     
     PlotDataset_log(Plot3, ds, 'ABS', q_cut)
     PlotDataset(Plot_START, ds, 'ABS', q_cut)    
-    Plot3.x_range = [1.8e-5, 0.02]
+    Plot3.x_range = [1.6e-5, 0.02]
     
     
 ######################################################################################
@@ -948,7 +949,7 @@ class ReductionDataset:
         sample_z = list(ds['entry1/sample/samz'])
         sz = sample_z[0]
         
-        print 'Sample Z: ', str(sz)
+        #print 'Sample Z: ', str(sz)
         '''
         #print 'Sample Z: ', str(sz)
         if not ((sz >= 30 and sz <= 38) or 
@@ -1634,10 +1635,9 @@ class ReductionDataset:
         LE = '\n'
         with open(path, 'w') as fp:
             fp.write("CREATED: " + datetime.now().strftime("%a, %d %b %Y at %H:%M:%S") + LE) 
-            fp.write("SAMPLE: " + self.SampleName + '; ' + self.SampleDescr + '; Thickness [cm]: %g' % (self.Thick) + LE)
-            fp.write("SAMPLE: " + self.SampleName + '; ' + self.SampleDescr + '; Thickness [cm]: %g' % (self.Thick) + LE)
+            fp.write("SAMPLE: " + self.SampleName + '; ' + self.SampleDescr + '; Thickness [cm]: %g' % (self.Thick) + LE)        
             fp.write("FILES: " + self.Filename.replace(';',',') + LE)
-
+            
             gdqv = self.gDQv
             
             doublepoints = 0

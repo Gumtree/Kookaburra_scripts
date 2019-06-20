@@ -4,6 +4,8 @@
 __script__.title = 'KKB Plot and Reduction 14.1.2017 BATCH'
 __script__.version = '2.0'
 
+# 2019-06-16 Add sample file temperature in batch file
+
 
 
 from math import sqrt, sin, exp
@@ -85,10 +87,10 @@ fix_int0.title = 'Fix intensity at 0-position'
 fix_Iwide = Par('bool', False)
 fix_Iwide.title = 'Fix Iwide'
 
-m2om0_fixed = Par('float', '180.32')
+m2om0_fixed = Par('float', '179.55478')
 m2om0_fixed.title = 'm2om (q=0)'
 
-int0_fixed = Par('float', '33972.452')
+int0_fixed = Par('float', '143340')
 int0_fixed.title = 'Intensity(q=0)'
 
 Iwide_fixed = Par('float', '674.0')
@@ -206,13 +208,19 @@ def __run_script__(fns):
         ds.SortAngles()    
     ds = RemoveIgnoredRanges(ds, samIgnorePts.value)
     
-    if convert2q.value:        
-        ds.FindZeroAngle()
+    if convert2q.value: 
+        
+        
+               
+        
         # under fix construction
         if fix_m2om0.value:
             ds.PeakAng = m2om0_fixed.value
             print 'Peak angle is fixed to ', m2om0_fixed.value
+        else:
+            ds.FindZeroAngle()
         if fix_int0.value: # not required
+            ds.PeakVal = int0_fixed.value 
             print 'I(rock) is fixed to ', int0_fixed.value                
         
         
@@ -337,15 +345,18 @@ def reduceStitchedFiles():
     
     ds.SortAngles()    
     ds = RemoveIgnoredRanges(ds, samIgnorePts.value)
-    ds.FindZeroAngle()
+    
                           
         
     # under fix construction
     if fix_m2om0.value:
         ds.PeakAng = m2om0_fixed.value
         print 'Peak angle is fixed to ', m2om0_fixed.value
+    else:
+        ds.FindZeroAngle()
     if fix_int0.value: # not required
-            print 'I(rock) is fixed to ', int0_fixed.value              
+        ds.PeakVal = int0_fixed.value
+        print 'I(rock) is fixed to ', int0_fixed.value              
         
     ds.DetermineQVals()   
     ds.FindTWideCtr()
@@ -483,12 +494,15 @@ def reduceBatchFiles():
         
         ds.SortAngles()    
         ds = RemoveIgnoredRanges(ds, samIgnorePts.value)
-        ds.FindZeroAngle()
+        
         
         if fix_m2om0.value:
             ds.PeakAng = m2om0_fixed.value
             print 'Peak angle is fixed to ', m2om0_fixed.value
+        else:
+            ds.FindZeroAngle()
         if fix_int0.value: # not required
+            ds.PeakVal = int0_fixed.value
             print 'I(rock) is fixed to ', int0_fixed.value
             
         ds.DetermineQVals()
@@ -515,12 +529,15 @@ def reduceBatchFiles():
             data_point.append(ds.TimeStamp[i])
             data_point.append(ds.DetCtr[i])
             summary_i.append(data_point)
+            data_point.append(ds.LS_C[i]-273.15)
             
         
         summary_all.append(summary_i)
     #coalesce q_bins
         
     print 'length filePaths', len(dsFilePaths)
+    
+    #print summary_all
         
     LE = '\n'
     with open(path + 'test.csv', 'w') as fp:
@@ -533,7 +550,8 @@ def reduceBatchFiles():
                 td= (delta_time+ timedelta(seconds=summary_all[j][i][1]))
                 t_secs = td.seconds + td.days * 24 * 3600
                 fp.write(str(t_secs) +',')
-                fp.write(str(summary_all[j][i][2]))
+                fp.write(str(summary_all[j][i][2]) +',')
+                fp.write(str(summary_all[j][i][3]))
                 fp.write(LE)
             
 
@@ -833,6 +851,10 @@ class ReductionDataset:
         self.gDQv          = float(ds['entry1/instrument/crystal/gDQv'])
         self.ScanVariable  = str(ds['entry1/instrument/crystal/scan_variable'])
         self.TimeStamp     = list(ds['entry1/time_stamp'])
+        try:
+            self.LS_C          = list(ds['entry1/sample/tc3/sensor/sensorValueC'])
+        except:
+            pass
         
         
         

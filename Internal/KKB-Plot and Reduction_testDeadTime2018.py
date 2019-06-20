@@ -1611,24 +1611,35 @@ class ReductionDataset:
             
             doublepoints = 0
             doublepointsi = []
-                        
+            
+            '''            
             preQ = float('nan')
-            for i in xrange(len(self.Qvals)):
-                newQ = self.Qvals[i]                
+            for i in xrange(len(self.Qvals_cut)):
+                newQ = self.Qvals_cut[i]                
                 if preQ == newQ:
                     doublepoints +=1
                     doublepointsi.append(i)                
                 if preQ != newQ:
-                    fp.write("%15.6g %15.3f %15.3f %15.6g %15.6g %15.6g" % (newQ, self.DetCtr[i], self.ErrDetCtr[i], -gdqv, -gdqv, -gdqv) + LE)                      
+                    fp.write("%15.6g %15.3f %15.3f %15.6g %15.6g %15.6g" % (newQ, self.DetCtr_cut[i], self.ErrDetCtr_cut[i], -gdqv, -gdqv, -gdqv) + LE)                      
                     preQ = newQ
+            '''
+            
+            #5.2.2019 Try getting rid of removing identical q-value
+            for i in xrange(len(self.Qvals_cut)):                              
+                    fp.write("%15.6g %15.3f %15.3f %15.6g %15.6g %15.6g" % (self.Qvals_cut[i], self.DetCtr_cut[i], self.ErrDetCtr_cut[i], -gdqv, -gdqv, -gdqv) + LE)                      
+                    
+                    
+                    
+                    
             fp.write("AMBIENT BACKGROUND: %g" % self.SampleBkg + LE)
             fp.write("EMP LEVEL: %g " % (self.empLevel) + LE) 
             fp.write("EMP FILES: " + self.Emp.Filename.replace(';',',') + "; EMP LEVEL: %.4g " % self.empLevel + LE)
             fp.write("Trock = %.4f; Twide = %.4f; Tsas = %.4f" % (self.TransRock, self.TransWide, self.TransRock / self.TransWide) + LE)
             fp.write("SAM PEAK ANGLE: %.5f ; EMP PEAK ANGLE: %.5f" % (self.PeakAng, self.Emp.PeakAng) + LE)
         
-        print ('Info: removed %i duplicate points in the full file: ' % doublepoints) + str(doublepointsi)
-
+        #print ('Info: removed %i duplicate points in the full file: ' % doublepoints) + str(doublepointsi)
+        print ('Info: We hope that all points are there in SaveAbs')
+        
     def SaveAbs_cut(self, path):
             
         LE = '\n'

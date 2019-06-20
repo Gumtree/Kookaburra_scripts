@@ -101,7 +101,7 @@ class KKB06cells(AbstractSampleStage):
                         ('6', 585.7),                       
                         ]
     
-    
+'''    
 class KKB06cells_Shroud(AbstractSampleStage):
     name = "KKB 6 Cells Tumbler Shroud"
     in_service = True
@@ -112,9 +112,23 @@ class KKB06cells_Shroud(AbstractSampleStage):
                         ('5', 463.1),
                         ('6', 568.3),                       
                         ]
+'''                        
                         
                         
+class KKB06cells_Shroud(AbstractSampleStage):
+    ## 28.11.2018 LdC
+    name = "KKB 6 Cells Tumbler Shroud"
+    in_service = True
+    index_samz_pairs = [('1', 40.3),
+                        ('2', 145.5), 
+                        ('3', 250.7), 
+                        ('4', 355.9), 
+                        ('5', 461.1),
+                        ('6', 566.3),                       
+                        ]
                         
+                        
+                       
                         
                         #('1', 39.8),
                         #('2', 145.0), 
@@ -123,71 +137,55 @@ class KKB06cells_Shroud(AbstractSampleStage):
                         #('5', 460.6),
                         #('6', 565.8),                       
                         #]
-    
-    
-class KKB06cells_Shane(AbstractSampleStage):
-    name = "SHANE KKB 6 Cells Tumbler"
+                        
+                        
+class KKB06cells_Shroud_Shane(AbstractSampleStage):
+    ## 28.11.2018 LdC
+    name = "KKB 6 Cells Tumbler Shroud Shane"
     in_service = False
     index_samz_pairs = [
-                        ('6_1', 600.0),
-                        ('6_2', 596.0), 
-                        ('6_3', 592.0), 
-                        ('6_4', 588.0), 
-                        ('6_5', 584.0),
-                        ('6_6', 580.0), 
-                        ('6_7', 576.0),
-                        ('6_8', 572.0),
-                             
-                        ('5_1', 495.0),
-                        ('5_2', 491.0), 
-                        ('5_3', 487.0), 
-                        ('5_4', 483.0), 
-                        ('5_5', 479.0),
-                        ('5_6', 475.0),                  
-                        ('5_7', 471.0),
-                        ('5_8', 467.0),  
-                                                
-                        ('4_1', 390.0),
-                        ('4_2', 386.0), 
-                        ('4_3', 382.0), 
-                        ('4_4', 378.0), 
-                        ('4_5', 374.0),
-                        ('4_6', 370.0),                  
-                        ('4_7', 366.0),
-                        ('4_8', 362.0),  
-                        
-                        ('3_1', 285.0),
-                        ('3_2', 281.0), 
-                        ('3_3', 277.0), 
-                        ('3_4', 273.0), 
-                        ('3_5', 269.0),
-                        ('3_6', 265.0),                  
-                        ('3_7', 261.0),
-                        ('3_8', 257.0)  
-                        
-                        
-                        ]    
+                        ('2', 145.5), 
+                        ('3L', 250.7),
+                        ('3B', 268.5),
+                        ('3M-8', 261.5),
+                        ('3M', 253.5),
+                        ('3T', 238.5), 
+                        ('4', 355.9),
+                        ('4B', 373.7),
+                        ('4M', 358.7),
+                        ('4T', 343.7), 
+                        ('5L', 461.1),
+                        ('5B', 478.9),
+                        ('5M', 463.9),
+                        ('5T', 448.9),
+                        ('6', 566.3),
+                        ('sedimented 261.5', 261.5),
+                        ('rotating middle 355.9', 355.9),
+                        ('rotating gradient 370.0', 370.0)                       
+                        ]
+                           
     
 class KKB05Roundcells(AbstractSampleStage):
     name = "KKB 5 Round Cells"
     in_service = False
     index_samz_pairs = [
-                        ('1', 33), 
-                        ('2', 178.5), 
-                        ('3', 324), 
-                        ('4', 469.5),
-                        ('5', 615),
+                        ('1', 32), 
+                        ('2', 177.5), 
+                        ('3', 323), 
+                        ('4', 468.5),
+                        ('5', 614),
                         ]
     
 class KKB05cells(AbstractSampleStage):
+    # updated 18.6.2019 with new aperture
     name = "KKB 5 Cells"
     in_service = False
     index_samz_pairs = [
-                        ('1', 35.5), 
-                        ('2', 181), 
-                        ('3', 326), 
-                        ('4', 472),
-                        ('5', 617),
+                        ('1', 31.5), 
+                        ('2', 177), 
+                        ('3', 322), 
+                        ('4', 468),
+                        ('5', 613),
                         ]
 
 
@@ -195,15 +193,15 @@ class KKB05cells(AbstractSampleStage):
 
 
 
-class SANS_Demountable_12mmAperture(AbstractSampleStage):
+class SANS_Demountable_12mmAperture(AbstractSampleStage): #after apsel and samx JM
     name = "SANS Demountable 5 Cells"
     in_service = False
     index_samz_pairs = [
-                        ('1', 37.0),
-                        ('2', 183.0),
-                        ('3', 327.0), # CHECK TROUBLESOME
-                        ('4', 474.0),
-                        ('5', 619.0),
+                        ('1', 31.0),
+                        ('2', 175.5),
+                        ('3', 321.5), # CHECK TROUBLESOME
+                        ('4', 467.5),
+                        ('5', 613.0),
                         ]
     
 class SANS_Hellma_10mmAperture(AbstractSampleStage):
