@@ -90,6 +90,14 @@ steps_templates_list.append([
     [34, 20.0, 1000, 1200]])
 
 steps_templates_list.append([
+    'Si111: Logarithmic Scan (low q few features)',
+    'ba',
+    'logscale',
+    [33, 6.0e-5, 1000, 1200],
+    [10, 10.0, 1000, 1200],
+    [29, 20.0, 1000, 1200]])
+
+steps_templates_list.append([
     'Si111: Logarithmic Scan (fine features)',
     'ba',
     'logscale',
