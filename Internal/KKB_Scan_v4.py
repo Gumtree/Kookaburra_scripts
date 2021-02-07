@@ -2077,8 +2077,9 @@ class ConfigurationModel:
         se_wait3.value = self.se_wait3 
         toggle_se(3)
         
-        se_other.value = self.se_other
-        se_other_cmd.value = self.se_other_cmd
+        if hasattr(self, 'se_other') :
+            se_other.value = self.se_other
+            se_other_cmd.value = self.se_other_cmd
         toggle_se_other()
         
         # load sample positions

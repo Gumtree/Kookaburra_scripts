@@ -1,6 +1,6 @@
 
 __script__.title = 'KKB Measurement Script'
-__script__.version = '3.1'
+__script__.version = '3.2'
 
 from gumpy.commons import sics
 from org.gumtree.gumnix.sics.control import ServerStatus
@@ -1439,7 +1439,8 @@ def startScan(configModel):
 
         if samz is not None:
             print 'run samz %.2f' % samz
-            sics.execute('run samz %.2f' % samz)
+#            sics.execute('run samz %.2f' % samz)
+            sics.drive('samz', float(samz))
             # sics.execute('prun samz 2' % samz) !!!
             time.sleep(1)
             waitUntilSicsIs(ServerStatus.EAGER_TO_EXECUTE)
@@ -1468,9 +1469,9 @@ def startScan(configModel):
             
             print 'drive %s %.6f' % (scanVariable, angle)
             
-            # sics.drive(scanVariable, float(angle))
-            sics.execute('drive %s %.6f' % (scanVariable, angle))
-            time.sleep(10)
+            sics.drive(scanVariable, float(angle))
+#            sics.execute('drive %s %.6f' % (scanVariable, angle))
+#            time.sleep(10)
             waitUntilSicsIs(ServerStatus.EAGER_TO_EXECUTE)
            
             print 'drive done'
