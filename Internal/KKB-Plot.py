@@ -15,7 +15,6 @@ __FOLDER_PATH__ = 'V:/shared/KKB Logbook/Temp Plot Data Repository'
 if not os.path.exists(__FOLDER_PATH__):
     os.makedirs(__FOLDER_PATH__)
 
-
 '''
 INPUT
 '''
@@ -214,6 +213,8 @@ def proc_fn(path):
     ds.__iDictionary__.addEntry('TransDeadTime', 'entry1/instrument/detector/TransDeadTime')
     try:
         ds.__iDictionary__.addEntry('LS_C', 'entry1/sample/tc3/sensor/sensorValueC')
+        
+        #print 'Sample Temperature:', float(ds.LS_C[0])-273.15  
     except:
         pass
      
@@ -221,7 +222,7 @@ def proc_fn(path):
         if ds.time[i] < 0.5:
             ds.time[i] = float('inf')
     print ''
-    print 'Sample Temperature:', float(ds.LS_C[0])-273.15
+   
     
     scanVariable = str(scan_variable.value)
     

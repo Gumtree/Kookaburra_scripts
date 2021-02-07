@@ -99,22 +99,8 @@ class KKB06cells(AbstractSampleStage):
                         ('4', 375.3), 
                         ('5', 480.5),
                         ('6', 585.7),                       
-                        ]
-    
-'''    
-class KKB06cells_Shroud(AbstractSampleStage):
-    name = "KKB 6 Cells Tumbler Shroud"
-    in_service = True
-    index_samz_pairs = [('1', 42.3),
-                        ('2', 147.5), 
-                        ('3', 252.7), 
-                        ('4', 357.9), 
-                        ('5', 463.1),
-                        ('6', 568.3),                       
-                        ]
-'''                        
-                        
-                        
+                        ]                       
+                                           
 class KKB06cells_Shroud(AbstractSampleStage):
     ## 28.11.2018 LdC
     name = "KKB 6 Cells Tumbler Shroud"
@@ -126,25 +112,22 @@ class KKB06cells_Shroud(AbstractSampleStage):
                         ('5', 461.1),
                         ('6', 566.3),                       
                         ]
-                        
-                        
-                       
-                        
-                        #('1', 39.8),
-                        #('2', 145.0), 
-                        #('3', 250.2), 
-                        #('4', 355.4), 
-                        #('5', 460.6),
-                        #('6', 565.8),                       
-                        #]
-                        
-                        
+    
+class KKB06cells_Shroud_Mark_plus9(AbstractSampleStage):
+    ## 28.11.2018 LdC
+    name = "KKB 6 Cells Tumbler Shroud MARK plus9"
+    in_service = False
+    index_samz_pairs = [('4', 364.9), 
+                        ('5', 470.1),                       
+                        ('6', 575.3),
+                        ]
+                                                                 
 class KKB06cells_Shroud_Shane(AbstractSampleStage):
     ## 28.11.2018 LdC
     name = "KKB 6 Cells Tumbler Shroud Shane"
     in_service = False
     index_samz_pairs = [
-                        ('2', 145.5), 
+                        ('2', 145.5), ('2_bottom(-16)', 161.5),
                         ('3L', 250.7),
                         ('3B', 268.5),
                         ('3M-8', 261.5),
@@ -161,7 +144,9 @@ class KKB06cells_Shroud_Shane(AbstractSampleStage):
                         ('6', 566.3),
                         ('sedimented 261.5', 261.5),
                         ('rotating middle 355.9', 355.9),
-                        ('rotating gradient 370.0', 370.0)                       
+                        ('rotating gradient 370.0', 370.0),
+                        ('4Bed', 364.4),
+                        ('5Bed', 469.6)                       
                         ]
                            
     
@@ -187,13 +172,8 @@ class KKB05cells(AbstractSampleStage):
                         ('4', 468),
                         ('5', 613),
                         ]
-
-
-
-
-
-
-class SANS_Demountable_12mmAperture(AbstractSampleStage): #after apsel and samx JM
+    
+class SANS_Demountable_12mmAperture(AbstractSampleStage): #27.10.2020 with apsel=3, and samx -6
     name = "SANS Demountable 5 Cells"
     in_service = False
     index_samz_pairs = [
@@ -203,7 +183,7 @@ class SANS_Demountable_12mmAperture(AbstractSampleStage): #after apsel and samx 
                         ('4', 467.5),
                         ('5', 613.0),
                         ]
-    
+'''   commented out 27.10.2020
 class SANS_Hellma_10mmAperture(AbstractSampleStage):
     name = "SANS Hellma 5 Cells"
     in_service = False
@@ -213,6 +193,21 @@ class SANS_Hellma_10mmAperture(AbstractSampleStage):
                         ('3', 326.0),
                         ('4', 471.5),
                         ('5', 617.0),
+                        ]
+ '''  
+    
+# changed from above with 10mm old Cd aperture. apselnum 1, samx -5.5. Note that this is very sensitive
+# to any movement of the aperture    
+    
+class SANS_Hellma_10mmAperture(AbstractSampleStage):
+    name = "SANS Hellma 5 Cells"
+    in_service = False
+    index_samz_pairs = [
+                        ('1', 40.0),
+                        ('2', 185.5),
+                        ('3', 331.0),
+                        ('4', 476.5),
+                        ('5', 622.0),
                         ]
 
 class Quokka5Cells15mmAperture(AbstractSampleStage):
@@ -226,27 +221,50 @@ class Quokka5Cells15mmAperture(AbstractSampleStage):
                         ('5', 619.0),
                         ]
     
-class KKB16Cells(AbstractSampleStage):
-    name = "KKB 16 Cells"
+class KKB16Cells_12mm(AbstractSampleStage):
+    name = "KKB 16 Cells 12mm aperture"
     in_service = False
     index_samz_pairs = [
-                        ('1-16', 33.1),
-                        ('2-16', 73.6),
-                        ('3-16', 113.6),
-                        ('4-16', 154.2),
-                        ('5-16', 194.0),
-                        ('6-16', 233.9),
-                        ('7-16', 273.8),
-                        ('8-16', 314.1),
-                        ('9-16', 354.4),
-                        ('10-16', 394.2),
-                        ('11-16', 434.4),
-                        ('12-16', 474.5),
-                        ('13-16', 514.3),
-                        ('14-16', 554.6),
-                        ('15-16', 594.5),
-                        ('16-16', 635.0),
-                        ] # 28.7.2017 with 5x5mm aperture on slider and sample
+                        ('1-16', 27.7),
+                        ('2-16', 67.7),
+                        ('3-16', 107.7),
+                        ('4-16', 147.7),
+                        ('5-16', 187.7),
+                        ('6-16', 227.7),
+                        ('7-16', 267.7),
+                        ('8-16', 307.7),
+                        ('9-16', 347.7),
+                        ('10-16', 387.7),
+                        ('11-16', 427.7),
+                        ('12-16', 467.7),
+                        ('13-16', 507.7),
+                        ('14-16', 547.7),
+                        ('15-16', 587.7),
+                        ('16-16', 627.7),
+                        ] # 11.9.20 20mm cadmium on sample, 12mm aperture on aperture slider
+    
+class KKB16Cells_10mm(AbstractSampleStage):
+    name = "KKB 16 Cells 10mm aperture"
+    in_service = False
+    index_samz_pairs = [
+                        ('1-16', 36.3),
+                        ('2-16', 76.3),
+                        ('3-16', 116.3),
+                        ('4-16', 156.3),
+                        ('5-16', 196.3),
+                        ('6-16', 236.3),
+                        ('7-16', 276.3),
+                        ('8-16', 316.3),
+                        ('9-16', 356.3),
+                        ('10-16', 396.3),
+                        ('11-16', 436.3),
+                        ('12-16', 476.3),
+                        ('13-16', 516.3),
+                        ('14-16', 556.3),
+                        ('15-16', 596.3),
+                        ('16-16', 636.3),
+                        ] # 29.9.20 12mm cadmium on sample, 10mm aperture on aperture slider
+    
     
 class KKB10Cells(AbstractSampleStage):
     name = "KKB 10 Cells"

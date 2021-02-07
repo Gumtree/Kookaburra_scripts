@@ -1,10 +1,22 @@
 
+
+
 # Script control setup area
 # script info
-__script__.title = 'KKB Plot and Reduction 14.1.2017 BATCH'
+__script__.title = 'KKB Plot and Reduction 25.1.2016'
 __script__.version = '2.0'
 
-# 2019-06-16 Add sample file temperature in batch file
+
+
+# 15.6.2017 Allow to reduce the detector range 
+# 15.6. Throw out points below resolution
+# 16.6. Tidy up run time to display in the reduction; tidy up display properties
+# 11.7.2018 Start changing deadtime
+# 12.7.2018 Implement Plot for monitoring Tube6 and Tube7
+# June 2019 Add temperature and "raw" to name
+# June 2019 Incorporate time dependance into batch reduce
+# June 2019 Create batch mode overview file
+# Sep 2020 Create proper putputformats also for batch reduce
 
 
 
@@ -17,9 +29,11 @@ from __builtin__ import min as builtin_min
 # TO ADD A FORTH PLOT
 try :
     Plot_START.close()
+    Plot4.close()
 except:
     pass
 Plot_START =  plot()
+Plot4 =  plot()
 
 
 
@@ -46,23 +60,18 @@ combine_tube3.title = '    Tube 3'
 combine_tube4 = Par('bool', True)
 combine_tube4.title = '    Tube 4'
 
-'''        
-g0 = Group('Select Tube(s) of Interest:')
-g0.numColumns = 5
-g0.add(combine_tube0, combine_tube1, combine_tube2, combine_tube3, combine_tube4)
-'''
-
-
 use_beammonitor = Par('bool', False)
 use_beammonitor.title = 'Use Beam Monitor'
 
-# DO NOT ASK DAVID ABOUT THIS VALUE !!!
-defaultMCR = Par('float', '8500')
+defaultMCR = Par('float', '28000')
 defaultMCR.title = 'Default MCR'
 
 medianMCR = Par('string', '0')
 medianMCR.title = 'Median MCR'
 medianMCR.enabled = False
+
+use_medianMCRPlot = Par('bool', False)
+use_medianMCRPlot.title = 'Use Median MCR for plot'
 
 TWideMarker = Par('float', '2e-3')
 TWideMarker.title = 'TWide Marker (1/A)'
@@ -76,42 +85,42 @@ negative_steps.title = 'Negative Steps'
 sort_scanvar = Par('bool', True)
 sort_scanvar.title = 'Sort Scan Variable'
 
+limit_lowq = Par('bool', True)
+limit_lowq.title = 'Cut low q'
+
+limit_lowq_number = Par('float', '1.8e-5')
+limit_lowq_number.title = 'below Ang^-1'
+
+remove_duplicate_points = Par('bool', True)
+remove_duplicate_points.title = 'Remove Duplicate Points'
 
 # FIXED construction site
-fix_m2om0 = Par('bool', False)
-fix_m2om0.title = 'Fix m2om 0-position'
+fix_m2om0_int0 = Par('bool', False)
+fix_m2om0_int0.title = 'Fix m2om 0-position and intensity'
 
-fix_int0 = Par('bool', False)
-fix_int0.title = 'Fix intensity at 0-position'
+m2om0_fixed = Par('float', '179.38')
+m2om0_fixed.title = 'm2om (q=0)'
+
+int0_fixed = Par('float', '33972.452')
+int0_fixed.title = 'Intensity(q=0)'
 
 fix_Iwide = Par('bool', False)
 fix_Iwide.title = 'Fix Iwide'
 
-m2om0_fixed = Par('float', '179.55478')
-m2om0_fixed.title = 'm2om (q=0)'
-
-int0_fixed = Par('float', '143340')
-int0_fixed.title = 'Intensity(q=0)'
-
 Iwide_fixed = Par('float', '674.0')
 Iwide_fixed.title = 'I(wide)'
 
+# limit detector
+limit_detector = Par('bool', False)
+limit_detector.title = 'Limit detector'
 
+detectorheight_start = Par('integer', '0')
+detectorheight_start.title = 'Start'
 
-
-
-'''
-g1 = Group('Advanced Settings')
-g1.numColumns = 3
-g1.add(use_beammonitor, defaultMCR, TWideMarker)
-'''
-       
+detectorheight_end = Par('integer', '1023')
+detectorheight_end.title = 'End'       
 
 # SAMPLE INPUT
-
-
-clearPlotsBtn = Act('clearPlots()', '** CLEAR ALL PLOTS **')
-
 Thickness = Par('float', 'NaN')
 Thickness.title = ''
 Thickness.enabled = False
@@ -161,24 +170,55 @@ g2.add(SampleName_FromFile,SampleName_Patching,SampleName,
        samIgnorePts)
 
 
+# add 2018-07-11 Deadtime
+DeadTime = Par('float', 'NaN')
+DeadTime.title = ''
+DeadTime.enabled = False
+DeadTime_Patching = Par('bool', False, command='DeadTime.enabled = DeadTime_Patching.value')
+DeadTime_Patching.title = ''
+DeadTime_FromFile = Par('string', 'NaN')
+DeadTime_FromFile.title = 'Deadtime'
+DeadTime_FromFile.enabled = False
+DeadTimeTypePara = Par('bool', True)
+DeadTimeTypePara.title = 'Paralysable'
+DeadTimeTypeNonPara = Par('bool', False)
+DeadTimeTypeNonPara.title = 'Non-paralysable'
+
+TemperatureVTE_setpoint = Par('bool', False)
+TemperatureVTE_setpoint.title = 'Temperature VTE setpoint'
+TemperatureVTE = Par('bool', False)
+TemperatureVTE.title = 'Temperature VTE'
+TemperatureLSC = Par('bool', False)
+TemperatureLSC.title = 'Temperature LS-C'
+TemperatureLSD = Par('bool', False)
+TemperatureLSD.title = 'Temperature LS-D'
+
+CreateBatchOverView = Par('bool', True)
+CreateBatchOverView.title = 'Create Batch Overview'
+CreateBatchOverView_file = Par('string', 'test.csv')
+CreateBatchOverView_file.title = 'filename'
+
+
+
 
 def clearPlots():
     global Plot1
     global Plot2
     global Plot3
     global Plot_START
+    global Plot4
     Plot1.clear()
     Plot2.clear() 
     Plot3.clear()
     Plot_START.clear()
+    Plot4.clear()
     '''
     try :
        Plot_START.close()
     except:
        pass
     '''
-   
-  
+    
 def __run_script__(fns):
               
     datasets = __DATASOURCE__.getSelectedDatasets()
@@ -188,6 +228,7 @@ def __run_script__(fns):
             SampleDescr_FromFile.value  = str(ds['entry1/sample/description'      ])
             Thickness_FromFile.value    = float(ds['entry1/sample/thickness'        ])
             SampleBkg_FromFile.value    = float(ds['entry1/experiment/bkgLevel'     ])
+            DeadTime_FromFile.value     = float(ds['entry1/instrument/detector/MainDeadTime'     ])
         
     dsFilePaths = [str(ds.getLocation()) for ds in __DATASOURCE__.getSelectedDatasets()]
         
@@ -208,35 +249,46 @@ def __run_script__(fns):
         ds.SortAngles()    
     ds = RemoveIgnoredRanges(ds, samIgnorePts.value)
     
-    if convert2q.value: 
-        
-        
-               
-        
-        # under fix construction
-        if fix_m2om0.value:
+    if convert2q.value:                       
+       # under fix construction
+        if fix_m2om0_int0.value:
             ds.PeakAng = m2om0_fixed.value
+            ds.PeakVal = int0_fixed.value
             print 'Peak angle is fixed to ', m2om0_fixed.value
+            print 'I(rock) is fixed to ', int0_fixed.value 
         else:
-            ds.FindZeroAngle()
-        if fix_int0.value: # not required
-            ds.PeakVal = int0_fixed.value 
-            print 'I(rock) is fixed to ', int0_fixed.value                
+            ds.FindZeroAngle()      
+            
+        ds.DetermineQVals()  
         
-        
-        ds.DetermineQVals()        
-        ds.FindTWideCtr()
-        
-        # under fix construction
-        if fix_Iwide.value: # not required
+        # under construction
+        if fix_Iwide.value:
             print 'I(wide) is fixed to ', Iwide_fixed.value
+            ds.TWideCtr = Iwide_fixed.value
+        else:
+            ds.FindTWideCtr()           
         
     else:
         ds.Qvals = copy(ds.Angle)
-            
     
     
-    ds.SaveRaw(path + filename + '.dat')
+    if TemperatureVTE_setpoint.value:   
+            ds.SaveRaw(path + filename + '_' + ds.SampleName + '_tempVTEsp_' + str(int(ds.TempvTE_sp)) + 'C-raw.dat')
+            ds.SaveRaw_Mantid(path + 'Mantid_' + filename + '_' + ds.SampleName + '_tempVTEsp_' + str(int(ds.TempvTE_sp)) + 'C-raw.dat')
+    elif TemperatureVTE.value:
+            ds.SaveRaw(path + filename + '_' + ds.SampleName + '_tempVTE_' + str(int(ds.TempvTE)) + 'C-raw.dat')
+            ds.SaveRaw_Mantid(path + 'Mantid_' + filename + '_' + ds.SampleName + '_tempVTE_' + str(int(ds.TempvTE)) + 'C-raw.dat')
+    elif TemperatureLSC.value:
+            ds.SaveRaw(path + filename + '_' + ds.SampleName + '_tempLSC_' + str(int(ds.TempLSC)) + 'C-raw.dat')
+            ds.SaveRaw_Mantid(path + 'Mantid_' + filename + '_' + ds.SampleName + '_tempLSC_' + str(int(ds.TempLSC)) + 'C-raw.dat')
+    elif TemperatureLSD.value:
+            ds.SaveRaw(path + filename + '_' + ds.SampleName + '_tempLSD_' + str(int(ds.TempLSD)) + 'C-raw.dat')
+            ds.SaveRaw_Mantid(path + 'Mantid_' + filename + '_' + ds.SampleName + '_tempLSD_' + str(int(ds.TempLSD)) + 'C-raw.dat')
+    else:
+        ds.SaveRaw(path + filename + '_' + ds.SampleName + '-raw.dat')
+        ds.SaveRaw_Mantid(path + 'Mantid_' + filename + '_' + ds.SampleName + '-raw.dat')
+        #ds.SaveRaw(path + filename + '_raw.dat')
+        
     
     # determine median beam-monitor count rate
     buffer = list(ds.MonCtr)
@@ -256,308 +308,8 @@ def __run_script__(fns):
     
     Plot3.add_y_marker(ds.SampleBkg, 6000, 'blue')    
     Plot_START.add_y_marker(ds.SampleBkg, 6000, 'blue')
-
-
-reduceSingleFileBtn = Act('reduceStitchedFiles()', '*** REDUCE SINGLE FILE ***')        
-reduceSingleFileBtn.colspan = 1
-reduceStitchedFilesBtn = Act('reduceStitchedFiles()', '*** REDUCE STITCHED FILES ***')        
-reduceStitchedFilesBtn.colspan = 1
-
-def reduceStitchedFiles():
     
-    # Use the provided resources, please don't remove.
-    global Plot1
-    global Plot2
-    global Plot3
-    global Plot_START
-    
-    Plot1.clear()
-    Plot2.clear() 
-    Plot3.clear() 
-    Plot_START.clear()
-    
-    
-    # find empty files
-    emFileList = filter(None, str(empFiles.value).split(','))
-    for i in xrange(0, len(emFileList)):
-        emFileList[i] = emFileList[i].strip()
-
-    emFilePaths = []
-    if len(emFileList) != 0:
-        for emFile in emFileList:
-            found = False
-            
-            for ds in __DATASOURCE__.getDatasetList():
-                dsLocation = str(ds.getLocation())
-                if emFile in dsLocation:
-                    if not found:
-                        emFilePaths.append(dsLocation)
-                        found = True
-                    else:
-                        print 'Warning: "%s" has multiple matches' % emFile
-                        break
-                    
-            if not found:
-                print 'Warning: "%s" was not found' % emFile
-                
-    if len(emFilePaths) == 0:
-        print ''
-        print 'WARNING: Please select an empty sample container'
-        return
-
-    # find sample files    
-    dsFilePaths = [str(ds.getLocation()) for ds in __DATASOURCE__.getSelectedDatasets()]
-        
-    if len(dsFilePaths) == 0:
-        print 'Warning: no Sample Scans were selected'
-        return
-
-
-    # reduction
-        
-    # get name of first sample file
-    filename = os.path.basename(dsFilePaths[0])
-    filename = filename[:filename.find('.nx.hdf')]
-    
-    path = 'V:/shared/KKB Logbook/Temp Plot Data Repository/'          
-        
-    datasets = __DATASOURCE__.getSelectedDatasets()
-    for sds in datasets:
-        ds = Dataset(str(sds.getLocation()))
-        SampleName_FromFile.value   = str(ds['entry1/sample/name'             ])
-        SampleDescr_FromFile.value  = str(ds['entry1/sample/description'      ])
-        Thickness_FromFile.value    = float(ds['entry1/sample/thickness'        ])
-        SampleBkg_FromFile.value    = float(ds['entry1/experiment/bkgLevel'     ])
-         
-        
-    
-    print 'sample:', ', '.join(dsFilePaths)
-    ds = LoadNxHdf(dsFilePaths)  
-    
-    if ds.ScanVariablename == 'm2om':
-        pass
-    else:
-        raise Exception ("This is not an m2om scan")
-    if convert2q.value:
-        pass
-    else:
-        raise Exception("Please tick 'Convert to q'")
-    
-    ds.SortAngles()    
-    ds = RemoveIgnoredRanges(ds, samIgnorePts.value)
-    
-                          
-        
-    # under fix construction
-    if fix_m2om0.value:
-        ds.PeakAng = m2om0_fixed.value
-        print 'Peak angle is fixed to ', m2om0_fixed.value
-    else:
-        ds.FindZeroAngle()
-    if fix_int0.value: # not required
-        ds.PeakVal = int0_fixed.value
-        print 'I(rock) is fixed to ', int0_fixed.value              
-        
-    ds.DetermineQVals()   
-    ds.FindTWideCtr()
-    # under construction
-    if fix_Iwide.value: # not required
-        print 'I(wide) is fixed to ', Iwide_fixed.value   
-    
-    PlotDataset(Plot_START, ds, 'SAM: '+ filename)
-    PlotTransmissionDataset(Plot1, ds, 'SAM: '+ filename)
-    PlotMonitorDataset(Plot2, ds, 'SAM: '+ filename)
-    PlotDataset_log(Plot3, ds, 'SAM: '+ filename)      
-    
-    print 'empty: ', ', '.join(emFilePaths)
-    em = LoadNxHdf(emFilePaths)
-    
-    if em.ScanVariablename == 'm2om':
-        pass
-    else:
-        raise Exception ("This is not an m2om scan")
-    if convert2q.value:
-        pass
-    else:
-        raise Exception("Please tick 'Convert to q'")
-    
-    em.SortAngles()
-    em = RemoveIgnoredRanges(em, empIgnorePts.value)
-    em.FindZeroAngle()
-    em.DetermineQVals()
-    em.FindTWideCtr()    
-    
-    PlotDataset(Plot_START, em, 'EMPTY')
-    PlotTransmissionDataset(Plot1, em, 'EMPTY')
-    PlotMonitorDataset(Plot2, em, 'EMPTY')
-    PlotDataset_log(Plot3, em, 'EMPTY')
-    Plot3.add_y_marker(em.empLevel, 6000, 'green')
-    Plot_START.add_y_marker(em.empLevel, 6000, 'green')
-    Plot3.add_y_marker(em.SampleBkg, 6000, 'blue')
-    Plot_START.add_y_marker(em.SampleBkg, 6000, 'blue')
-    
-    
-    # correction
-   
-    ds.CorrectData(em)
-    ds.SaveAbs(path + filename + '-abs.dat')
-    
-    PlotDataset_log(Plot3, ds, 'ABS')
-    PlotDataset(Plot_START, ds, 'ABS')    
-    Plot3.x_range = [1.8e-5, 0.02]
-
-
-reduceBatchFilesBtn = Act('reduceBatchFiles()', '*** REDUCE BATCH FILES ***')        
-reduceBatchFilesBtn.colspan = 1
-
-def reduceBatchFiles():
-    
-    # find empty files
-    emFileList = filter(None, str(empFiles.value).split(','))
-    for i in xrange(0, len(emFileList)):
-        emFileList[i] = emFileList[i].strip()
-
-    emFilePaths = []
-    if len(emFileList) != 0:
-        for emFile in emFileList:
-            found = False
-            
-            for ds in __DATASOURCE__.getDatasetList():
-                dsLocation = str(ds.getLocation())
-                if emFile in dsLocation:
-                    if not found:
-                        emFilePaths.append(dsLocation)
-                        found = True
-                    else:
-                        print 'Warning: "%s" has multiple matches' % emFile
-                        break
-                    
-            if not found:
-                print 'Warning: "%s" was not found' % emFile
-                
-    if len(emFilePaths) == 0:
-        print ''
-        print 'WARNING: Please select an empty sample container'
-        return
-
-    print 'empty: ', ', '.join(emFilePaths)
-    em = LoadNxHdf(emFilePaths)
-    
-    if em.ScanVariablename == 'm2om':
-        pass
-    else:
-        raise Exception ("This is not an m2om scan")
-    
-    if convert2q.value:
-        pass
-    else:
-        raise Exception("Please tick 'Convert to q'")
-    
-    em.SortAngles()
-    em = RemoveIgnoredRanges(em, empIgnorePts.value)
-    em.FindZeroAngle()
-    em.DetermineQVals()
-    em.FindTWideCtr()    
-
-    # find sample files    
-    dsFilePaths = [str(ds.getLocation()) for ds in __DATASOURCE__.getSelectedDatasets()]
-        
-    if len(dsFilePaths) == 0:
-        print 'Warning: no Sample Scans were selected'
-        return
-
-    # reduction
-    path = 'V:/shared/KKB Logbook/Temp Plot Data Repository/'    
-    
-    summary_all = []# 14.1.2017 NEW
-    file_start_times = []
-    file_names = []
-    #set earliest time to a point in the future so it will be immediately replaced
-    earliest_time = datetime.strptime('2100-01-01 00:00:00','%Y-%m-%d %H:%M:%S') #set this to some time in the future
-    
-    
-    
-    for dsFilePath in dsFilePaths:
-        # get name of sample file
-        filename = os.path.basename(dsFilePath)
-        filename = filename[:filename.find('.nx.hdf')]
-
-        ds = LoadNxHdf([dsFilePath])
-        
-        if ds.ScanVariablename == 'm2om':
-            pass
-        else:
-            raise Exception ("This is not an m2om scan")
-        
-        if convert2q.value:
-            pass
-        else:
-            raise Exception("Please tick 'Convert to q'")
-        
-        ds.SortAngles()    
-        ds = RemoveIgnoredRanges(ds, samIgnorePts.value)
-        
-        
-        if fix_m2om0.value:
-            ds.PeakAng = m2om0_fixed.value
-            print 'Peak angle is fixed to ', m2om0_fixed.value
-        else:
-            ds.FindZeroAngle()
-        if fix_int0.value: # not required
-            ds.PeakVal = int0_fixed.value
-            print 'I(rock) is fixed to ', int0_fixed.value
-            
-        ds.DetermineQVals()
-        ds.FindTWideCtr()
-        
-        if fix_Iwide.value: # not required
-            print 'I(wide) is fixed to ', Iwide_fixed.value    
-
-        # correction
-        ds.CorrectData(em)
-        ds.SaveAbs(path + filename + '-abs.dat')
-        
-        summary_i = [] #14.1.2017 Add to get an overview for files with few q-values
-        file_names.append(filename)
-        #append a datetime object 
-        filetime = datetime.strptime(ds.start_time,'%Y-%m-%d %H:%M:%S')
-        if filetime < earliest_time :  #set earliest_time to the earliest file start_time
-            earliest_time = filetime 
-        file_start_times.append(filetime)
-        
-        for i in range(len(ds.Qvals)):
-            data_point = []
-            data_point.append(ds.Qvals[i])
-            data_point.append(ds.TimeStamp[i])
-            data_point.append(ds.DetCtr[i])
-            summary_i.append(data_point)
-            data_point.append(ds.LS_C[i]-273.15)
-            
-        
-        summary_all.append(summary_i)
-    #coalesce q_bins
-        
-    print 'length filePaths', len(dsFilePaths)
-    
-    #print summary_all
-        
-    LE = '\n'
-    with open(path + 'test.csv', 'w') as fp:
-        for j in range(len(dsFilePaths)):
-            delta_time = file_start_times[j]-earliest_time
-            
-            print delta_time
-            
-            for i in range(len(summary_all[j])):
-                fp.write(file_names[j] +',')
-                fp.write(str(summary_all[j][i][0])+',')
-                td= (delta_time+ timedelta(seconds=summary_all[j][i][1]))
-                t_secs = td.seconds + td.days * 24 * 3600
-                fp.write(str(t_secs) +',')
-                fp.write(str(summary_all[j][i][2]) +',')
-                fp.write(str(summary_all[j][i][3]))
-                fp.write(LE)
-            
+    PlotTube67Dataset(Plot4, ds, 'tube6', filename + ': ' + ds.SampleName)
 
 
 #########################################################################################
@@ -635,8 +387,18 @@ def empFilesTake():
     em = LoadNxHdf(emFilePaths)                           
     em.SortAngles()    
     em = RemoveIgnoredRanges(em, empIgnorePts.value)
-    empLevel.value = sum(em.DetCtr[-tailpoints:]) / tailpoints
-    empLevel_Error.value = sum(em.ErrDetCtr[-tailpoints:]) / tailpoints   
+    
+    
+    
+    if bool(negative_steps.value):
+        empLevel.value = sum(em.DetCtr[:tailpoints]) / tailpoints
+        empLevel_Error.value = sum(em.ErrDetCtr[:tailpoints]) / tailpoints 
+    else:
+        empLevel.value = sum(em.DetCtr[-tailpoints:]) / tailpoints
+        empLevel_Error.value = sum(em.ErrDetCtr[-tailpoints:]) / tailpoints 
+    
+    
+    
     em.FindZeroAngle()
     em.DetermineQVals()
     em.MeasurementTime()
@@ -648,6 +410,7 @@ def empFilesTake():
     em.SaveRaw(path + filename + '-empty.dat')
     
     global Plot_START
+    global Plot4
     
     #print dir(em)
     PlotDataset(Plot_START, em, 'EMPTY: ' + filename)
@@ -667,22 +430,454 @@ def empFilesTake():
     
     PlotMonitorDataset(Plot2, em, 'EMPTY: ' + filename)
 
-
 steps_label = Par('label', '')
 steps_label.colspan = 2
 steps_label = Par('label', '')
 steps_label.colspan = 2
-steps_label = Par('label', '')
-steps_label.colspan = 2
-steps_label = Par('label', '')
-steps_label.colspan = 2
-steps_label = Par('label', '')
-steps_label.colspan = 2
-steps_label = Par('label', '')
 
 
+clearPlotsBtn = Act('clearPlots()', '*** CLEAR ALL PLOTS ***')
 
-# OPTIONAL: AMBIENT BACKGROUND
+
+steps_label = Par('label', '')
+steps_label.colspan = 2
+
+######################################################################################
+
+reduceStitchedFilesBtn = Act('reduceStitchedFiles()', '*** REDUCE SINGLE (STITCHED) FILES ***')        
+reduceStitchedFilesBtn.colspan = 1
+
+def reduceStitchedFiles():
+    
+    # Use the provided resources, please don't remove.
+    global Plot1
+    global Plot2
+    global Plot3
+    global Plot_START
+    global Plot4
+    
+    
+    Plot1.clear()
+    Plot2.clear() 
+    Plot3.clear() 
+    Plot_START.clear()
+    Plot4.clear() 
+       
+    # find empty files
+    emFileList = filter(None, str(empFiles.value).split(','))
+    for i in xrange(0, len(emFileList)):
+        emFileList[i] = emFileList[i].strip()
+
+    emFilePaths = []
+    if len(emFileList) != 0:
+        for emFile in emFileList:
+            found = False
+            
+            for ds in __DATASOURCE__.getDatasetList():
+                dsLocation = str(ds.getLocation())
+                if emFile in dsLocation:
+                    if not found:
+                        emFilePaths.append(dsLocation)
+                        found = True
+                    else:
+                        print 'Warning: "%s" has multiple matches' % emFile
+                        break
+                    
+            if not found:
+                print 'Warning: "%s" was not found' % emFile
+                
+    if len(emFilePaths) == 0:
+        print ''
+        print 'WARNING: Please select an empty sample container'
+        return
+
+    # find sample files    
+    dsFilePaths = [str(ds.getLocation()) for ds in __DATASOURCE__.getSelectedDatasets()]
+        
+    if len(dsFilePaths) == 0:
+        print 'Warning: no Sample Scans were selected'
+        return
+
+    # reduction
+        
+    # get name of first sample file
+    filename = os.path.basename(dsFilePaths[0])
+    filename = filename[:filename.find('.nx.hdf')]
+    
+    path = 'V:/shared/KKB Logbook/Temp Plot Data Repository/'          
+        
+    datasets = __DATASOURCE__.getSelectedDatasets()
+    for sds in datasets:
+        ds = Dataset(str(sds.getLocation()))
+        SampleName_FromFile.value   = str(ds['entry1/sample/name'             ])
+        SampleDescr_FromFile.value  = str(ds['entry1/sample/description'      ])
+        Thickness_FromFile.value    = float(ds['entry1/sample/thickness'        ])
+        SampleBkg_FromFile.value    = float(ds['entry1/experiment/bkgLevel'     ])         
+    
+    print ''    
+    print '*** REDUCTION ****'
+    print ''
+    print '*** SAMPLE:', ', '.join(dsFilePaths)
+    ds = LoadNxHdf(dsFilePaths)  
+    ds.MeasurementTime()
+    
+    if ds.ScanVariablename == 'm2om':
+        pass
+    else:
+        raise Exception ("This is not an m2om scan")
+    if convert2q.value:
+        pass
+    else:
+        raise Exception("Please tick 'Convert to q'")
+    
+    ds.SortAngles()    
+    ds = RemoveIgnoredRanges(ds, samIgnorePts.value)                          
+        
+    # under fix construction
+    if fix_m2om0_int0.value:
+        ds.PeakAng = m2om0_fixed.value
+        ds.PeakVal = int0_fixed.value
+        print 'Peak angle is fixed to ', m2om0_fixed.value
+        print 'I(rock) is fixed to ', int0_fixed.value 
+    else:
+        ds.FindZeroAngle()      
+        
+    ds.DetermineQVals()  
+    
+    # under construction
+    if fix_Iwide.value:
+        print 'I(wide) is fixed to ', Iwide_fixed.value
+        ds.TWideCtr = Iwide_fixed.value
+    else:
+        ds.FindTWideCtr()
+     
+    PlotDataset(Plot_START, ds, 'SAM: '+ filename)
+    PlotTransmissionDataset(Plot1, ds, 'SAM: '+ filename)
+    PlotMonitorDataset(Plot2, ds, 'SAM: '+ filename)
+    PlotDataset_log(Plot3, ds, 'SAM: '+ filename)      
+    
+    print ''
+    print '*** EMPTY: ', ', '.join(emFilePaths)
+    em = LoadNxHdf(emFilePaths)
+    em.MeasurementTime()
+    
+    if em.ScanVariablename == 'm2om':
+        pass
+    else:
+        raise Exception ("This is not an m2om scan")
+    if convert2q.value:
+        pass
+    else:
+        raise Exception("Please tick 'Convert to q'")
+    
+    em.SortAngles()
+    em = RemoveIgnoredRanges(em, empIgnorePts.value)
+    em.FindZeroAngle()
+    em.DetermineQVals()
+    em.FindTWideCtr()    
+    
+    PlotDataset(Plot_START, em, 'EMPTY')
+    PlotTransmissionDataset(Plot1, em, 'EMPTY')
+    PlotMonitorDataset(Plot2, em, 'EMPTY')
+    PlotDataset_log(Plot3, em, 'EMPTY')
+    Plot3.add_y_marker(em.empLevel, 6000, 'green')
+    Plot_START.add_y_marker(em.empLevel, 6000, 'green')
+    Plot3.add_y_marker(em.SampleBkg, 6000, 'blue')
+    Plot_START.add_y_marker(em.SampleBkg, 6000, 'blue')
+    
+    # correction
+    ds.CorrectData(em)
+    
+    q_cut = False # to cut the low q-values
+    
+    if limit_lowq.value:
+        q_cut = True
+        ds.Qvals_cut = []
+        ds.DetCtr_cut = []
+        ds.ErrDetCtr_cut = []
+
+        for i in xrange(len(ds.Qvals)):                    
+            if ds.Qvals[i] > limit_lowq_number.value:              
+                ds.Qvals_cut.append(ds.Qvals[i])
+                ds.DetCtr_cut.append(ds.DetCtr[i])
+                ds.ErrDetCtr_cut.append(ds.ErrDetCtr[i])
+                
+        if TemperatureVTE_setpoint.value:   
+                ds.SaveAbs_cut(path + filename + '_' + ds.SampleName + '_tempVTEsp_' + str(int(ds.TempvTE_sp)) + 'C-abs_cut.dat')
+                ds.SaveAbs_cut_Mantid( path + 'Mantid_' + filename + '_' + ds.SampleName + '_tempVTEsp_' + str(int(ds.TempvTE_sp)) + '-abs_cut.dat')
+        elif TemperatureVTE.value:
+                ds.SaveAbs_cut(path + filename + '_' + ds.SampleName + '_tempVTE_' + str(int(ds.TempvTE)) + 'C-abs_cut.dat')
+                ds.SaveAbs_cut_Mantid( path + 'Mantid_' + filename + '_' + ds.SampleName + '_tempVTE_' + str(int(ds.TempvTE)) + '-abs_cut.dat')
+        elif TemperatureLSC.value:
+                ds.SaveAbs_cut(path + filename + '_' + ds.SampleName + '_tempLSC_' + str(int(ds.TempLSC)) + 'C-abs_cut.dat')
+                ds.SaveAbs_cut_Mantid( path + 'Mantid_' + filename + '_' + ds.SampleName + '_tempLSC_' + str(int(ds.TempLSC)) + '-abs_cut.dat')
+        elif TemperatureLSD.value:
+                ds.SaveAbs_cut(path + filename + '_' + ds.SampleName + '_tempLSD_' + str(int(ds.TempLSD)) + 'C-abs_cut.dat')
+                ds.SaveAbs_cut_Mantid( path + 'Mantid_' + filename + '_' + ds.SampleName + '_tempLSD_' + str(int(ds.TempLSD)) + '-abs_cut.dat')
+        else:
+            ds.SaveAbs_cut(path + filename + '_' + ds.SampleName + '-abs_cut.dat')
+            ds.SaveAbs_cut_Mantid( path + 'Mantid_' + filename + '_' + ds.SampleName + '-abs_cut.dat')   
+        
+
+    if TemperatureVTE_setpoint.value:   
+            ds.SaveAbs(path + filename + '_' + ds.SampleName + '_tempVTEsp_' + str(int(ds.TempvTE_sp)) + 'C-abs.dat')
+    elif TemperatureVTE.value:
+            ds.SaveAbs(path + filename + '_' + ds.SampleName + '_tempVTE_' + str(int(ds.TempvTE)) + 'C-abs.dat')
+    elif TemperatureLSC.value:
+            ds.SaveAbs(path + filename + '_' + ds.SampleName + '_tempLSC_' + str(int(ds.TempLSC)) + 'C-abs.dat')
+    elif TemperatureLSD.value:
+            ds.SaveAbs(path + filename + '_' + ds.SampleName + '_tempLSD_' + str(int(ds.TempLSD)) + 'C-abs.dat')
+    else:
+        ds.SaveAbs(path + filename + '_' + ds.SampleName + '-abs.dat')
+
+    
+    PlotDataset_log(Plot3, ds, 'ABS', q_cut)
+    PlotDataset(Plot_START, ds, 'ABS', q_cut)    
+    Plot3.x_range = [1.6e-5, 0.02]
+    
+    
+######################################################################################
+
+reduceBatchFilesBtn = Act('reduceBatchFiles()', '*** REDUCE BATCH FILES ***')        
+reduceBatchFilesBtn.colspan = 1
+
+def reduceBatchFiles():
+
+    # find empty files
+    emFileList = filter(None, str(empFiles.value).split(','))
+    for i in xrange(0, len(emFileList)):
+        emFileList[i] = emFileList[i].strip()
+
+    emFilePaths = []
+    if len(emFileList) != 0:
+        for emFile in emFileList:
+            found = False
+            
+            for ds in __DATASOURCE__.getDatasetList():
+                dsLocation = str(ds.getLocation())
+                if emFile in dsLocation:
+                    if not found:
+                        emFilePaths.append(dsLocation)
+                        found = True
+                    else:
+                        print 'Warning: "%s" has multiple matches' % emFile
+                        break
+                    
+            if not found:
+                print 'Warning: "%s" was not found' % emFile
+                
+    if len(emFilePaths) == 0:
+        print ''
+        print 'WARNING: Please select an empty sample container'
+        return
+
+    print 'empty: ', ', '.join(emFilePaths)
+    em = LoadNxHdf(emFilePaths)
+    
+    if em.ScanVariablename == 'm2om':
+        pass
+    else:
+        raise Exception ("This is not an m2om scan")
+    
+    if convert2q.value:
+        pass
+    else:
+        raise Exception("Please tick 'Convert to q'")
+    
+    em.SortAngles()
+    em = RemoveIgnoredRanges(em, empIgnorePts.value)
+    em.FindZeroAngle()
+    em.DetermineQVals()
+    em.FindTWideCtr()    
+
+    # find sample files    
+    dsFilePaths = [str(ds.getLocation()) for ds in __DATASOURCE__.getSelectedDatasets()]
+        
+    if len(dsFilePaths) == 0:
+        print 'Warning: no Sample Scans were selected'
+        return
+
+    # reduction
+    path = 'V:/shared/KKB Logbook/Temp Plot Data Repository/'   
+    
+    
+    if CreateBatchOverView.value:
+        # add this for time dependent data 2019
+        summary_all = []# 14.1.2017 NEW
+        file_start_times = []
+        file_names = []
+        #set earliest time to a point in the future so it will be immediately replaced
+        earliest_time = datetime.strptime('2100-01-01 00:00:00','%Y-%m-%d %H:%M:%S') #set this to some time in the future 
+        header = ["filename", "time [s]", "q [A^-1]", "Int [cm^-1]", "dI [cm^-1]"]
+
+        if TemperatureVTE_setpoint.value:
+            header.append("VTE_SP [C]")
+        if TemperatureVTE_setpoint.value:
+            header.append("VTE [C]")
+        if TemperatureLSC.value:
+            header.append("LSC [C]")
+        if TemperatureLSD.value:
+            header.append("LSD [C]")
+    
+    for dsFilePath in dsFilePaths:
+        # get name of sample file
+        filename = os.path.basename(dsFilePath)
+        filename = filename[:filename.find('.nx.hdf')]
+
+        ds = LoadNxHdf([dsFilePath])  
+        
+        if ds.ScanVariablename == 'm2om':
+            pass
+        else:
+            raise Exception ("This is not an m2om scan")
+        
+        if convert2q.value:
+            pass
+        else:
+            raise Exception("Please tick 'Convert to q'")
+        
+        ds.SortAngles()    
+        ds = RemoveIgnoredRanges(ds, samIgnorePts.value)
+              
+        # under fix construction
+        if fix_m2om0_int0.value:
+            ds.PeakAng = m2om0_fixed.value
+            ds.PeakVal = int0_fixed.value
+            print 'Peak angle is fixed to ', m2om0_fixed.value
+            print 'I(rock) is fixed to ', int0_fixed.value 
+        else:
+            ds.FindZeroAngle()      
+            
+        ds.DetermineQVals()  
+        
+        # under construction
+        if fix_Iwide.value:
+            print 'I(wide) is fixed to ', Iwide_fixed.value
+            ds.TWideCtr = Iwide_fixed.value
+        else:
+            ds.FindTWideCtr()
+
+        # correction
+        ds.CorrectData(em)
+    
+        q_cut = False # to cut the low q-values
+    
+        if limit_lowq.value:
+            q_cut = True
+            ds.Qvals_cut = []
+            ds.DetCtr_cut = []
+            ds.ErrDetCtr_cut = []
+    
+            for i in xrange(len(ds.Qvals)):                    
+                if ds.Qvals[i] > limit_lowq_number.value:              
+                    ds.Qvals_cut.append(ds.Qvals[i])
+                    ds.DetCtr_cut.append(ds.DetCtr[i])
+                    ds.ErrDetCtr_cut.append(ds.ErrDetCtr[i])
+                    
+            if TemperatureVTE_setpoint.value:   
+                    ds.SaveAbs_cut(path + filename + '_' + ds.SampleName + '_tempVTEsp_' + str(int(ds.TempvTE_sp)) + 'C-abs_cut.dat')
+            elif TemperatureVTE.value:
+                    ds.SaveAbs_cut(path + filename + '_' + ds.SampleName + '_tempVTE_' + str(int(ds.TempvTE)) + 'C-abs_cut.dat')
+            elif TemperatureLSC.value:
+                    ds.SaveAbs_cut(path + filename + '_' + ds.SampleName + '_tempLSC_' + str(int(ds.TempLSC)) + 'C-abs_cut.dat')
+            elif TemperatureLSD.value:
+                    ds.SaveAbs_cut(path + filename + '_' + ds.SampleName + '_tempLSD_' + str(int(ds.TempLSD)) + 'C-abs_cut.dat')
+            else:
+                ds.SaveAbs_cut(path + filename + '_' + ds.SampleName + '-abs_cut.dat') 
+                ds.SaveAbs_cut_Mantid( path + 'Mantid_' + filename + '_' + ds.SampleName + '-abs_cut.dat')  
+        
+
+        if TemperatureVTE_setpoint.value:   
+                ds.SaveAbs(path + filename + '_' + ds.SampleName + '_tempVTEsp_' + str(int(ds.TempvTE_sp)) + 'C-abs.dat')
+        elif TemperatureVTE.value:
+                ds.SaveAbs(path + filename + '_' + ds.SampleName + '_tempVTE_' + str(int(ds.TempvTE)) + 'C-abs.dat')
+        elif TemperatureLSC.value:
+                ds.SaveAbs(path + filename + '_' + ds.SampleName + '_tempLSC_' + str(int(ds.TempLSC)) + 'C-abs.dat')
+        elif TemperatureLSD.value:
+                ds.SaveAbs(path + filename + '_' + ds.SampleName + '_tempLSD_' + str(int(ds.TempLSD)) + 'C-abs.dat')
+        else:
+            ds.SaveAbs(path + filename + '_' + ds.SampleName + '-abs.dat') 
+              
+        
+        if CreateBatchOverView.value:
+        
+            summary_i = [] #14.1.2017 Add to get an overview for files with few q-values
+            
+            file_names.append(filename)
+            
+            #append a datetime object 
+            filetime = datetime.strptime(ds.start_time,'%Y-%m-%d %H:%M:%S')
+            
+            if filetime < earliest_time :  #set earliest_time to the earliest file start_time
+                earliest_time = filetime 
+            file_start_times.append(filetime)
+            
+            #print file_start_times
+            
+            
+            for i in range(len(ds.Qvals)):
+                data_point = []
+                data_point.append(ds.TimeStamp[i])
+                data_point.append(ds.Qvals[i])
+                data_point.append(ds.DetCtr[i])
+                data_point.append(ds.ErrDetCtr[i])
+                if TemperatureVTE_setpoint.value:
+                    data_point.append(ds.TempvTE_sp_all[i])
+                if TemperatureVTE.value:
+                    data_point.append(ds.TempvTE_all[i])
+                if TemperatureLSC.value:
+                    data_point.append(ds.TempLSC_all[i]-273.15)
+                if TemperatureLSD.value:
+                    data_point.append(ds.TempLSD_all[i]-273.15)             
+
+                summary_i.append(data_point)
+            
+            summary_all.append(summary_i)
+            
+            
+
+    ###filename_batch =     TO DO CREATE FILENAME FROM INTERFACE
+        
+    
+    if CreateBatchOverView.value:
+        filename_out = CreateBatchOverView_file.value
+    
+        LE = '\n'
+        with open(path + filename_out, 'w') as fp:
+            for i in range(len(header)):
+                fp.write(header[i] + ',')
+            fp.write(LE)
+            
+            for j in range(len(dsFilePaths)):
+                delta_time = file_start_times[j] - earliest_time
+                
+                for i in range(len(summary_all[j])):                
+                    fp.write(file_names[j] +',')
+                    td= (delta_time+ timedelta(seconds=summary_all[j][i][0]))
+                    t_secs = td.seconds + td.days * 24 * 3600
+                    fp.write(str(t_secs) +',') # time                    
+                    fp.write(str(summary_all[j][i][1])+',') # q-value
+                    fp.write(str(summary_all[j][i][2])+',') # this is I
+                    fp.write(str(summary_all[j][i][3])) # this is dI
+                    for k in range(4,len(data_point)):
+                        fp.write(',' + str(summary_all[j][i][k])) # temperatures if ticked
+                    fp.write(LE)
+
+# Empty Space
+steps_label = Par('label', '')
+steps_label.colspan = 2
+steps_label = Par('label', '')
+steps_label.colspan = 2
+steps_label = Par('label', '')
+steps_label.colspan = 2
+steps_label = Par('label', '')
+steps_label.colspan = 2
+steps_label = Par('label', '')
+steps_label.colspan = 2
+steps_label = Par('label', '')
+
+
+# OPTIONAL: AMBIENT BACKGROUND ########################################################
 bkgFiles = Par('string', '')
 bkgFiles.title = 'Files' 
 bkgFilesTakeBtn = Act('bkgFilesTake()', 'Select As Ambient Background')
@@ -699,7 +894,7 @@ bkgLevel_Error.enabled = False
 bkgLevel_space = Par('label', '')
 bkgLevel_space.colspan = 2
 
-g4 = Group('OPTIONAL: RE-DETERMINE AMBIENT BACKGROUND (AB) AND COPY VALUE TO PATCHED AB INPUT WINDOW')
+g4 = Group('Optional: Determine Ambient Background')
 g4.numColumns = 2
 g4.add(bkgFiles, bkgFilesTakeBtn, bkgIgnorePts, 
        bkgLevel, bkgLevel_space,bkgLevel_Error)
@@ -763,6 +958,7 @@ def bkgFilesTake():
     bkg.DetermineQVals()
     
     global Plot_START
+    global Plot4
 
     PlotDataset(Plot_START, bkg, 'Determine background: ' + filename)
     PlotDataset_log(Plot3, bkg, 'Determine background: ' + filename)
@@ -772,20 +968,50 @@ def bkgFilesTake():
        
     PlotTransmissionDataset(Plot1, bkg, 'Determine background: ' + filename)
     PlotMonitorDataset(Plot2, bkg, 'Determine background: ' + filename)    
+
+
+
+
     
     
-g0 = Group('Select Tube(s) of Interest:')
+g0 = Group('Advanced Settings - Select Tube(s) of Interest:')
 g0.numColumns = 5
 g0.add(combine_tube0, combine_tube1, combine_tube2, combine_tube3, combine_tube4)
 
-g1 = Group('Advanced Settings')
-g1.numColumns = 3
-g1.add(use_beammonitor, defaultMCR, medianMCR, TWideMarker, convert2q, negative_steps, sort_scanvar)
+g2 = Group('Advanced Settings - Limit Detector Area')
+g2.numColumns = 3
+g2.add(limit_detector,detectorheight_start,detectorheight_end)
 
-g2 = Group('Fix m2om and Intensity - under construction')
-g2.numColumns = 2
-g2.add(fix_m2om0, m2om0_fixed, fix_int0, int0_fixed, fix_Iwide, Iwide_fixed)
-    
+g1 = Group('Advanced Settings - Beam Monitor')
+g1.numColumns = 3
+g1.add(use_beammonitor, defaultMCR, medianMCR,use_medianMCRPlot)
+
+g3 = Group('Advanced Settings - Cut Low Q Values')
+g3.numColumns = 3
+g3.add(limit_lowq, limit_lowq_number, remove_duplicate_points)
+
+g4 = Group('Advanced Settings')
+g4.numColumns = 4
+g4.add(convert2q, sort_scanvar, negative_steps, TWideMarker)
+
+g5 = Group('Advanced Settings - Fix m2om and Intensity - under construction')
+g5.numColumns = 3
+g5.add(fix_m2om0_int0, m2om0_fixed, int0_fixed, fix_Iwide, Iwide_fixed)
+
+g6 = Group('Advanced Settings - DEADTIME in testing')
+g6.numColumns = 3
+g6.add(DeadTime_FromFile,DeadTime_Patching,DeadTime,
+       DeadTimeTypePara, DeadTimeTypeNonPara)   
+
+g7 = Group('Advanced Settings Temperature')
+g7.numColumns = 2
+g7.add(TemperatureVTE_setpoint,TemperatureVTE,
+       TemperatureLSC, TemperatureLSD)
+
+g8 = Group('Advanced Settings Batch File')
+g8.numColumns = 4
+g8.add(CreateBatchOverView,CreateBatchOverView_file)
+
 
 def LoadNxHdf(filePaths):
 
@@ -827,10 +1053,8 @@ class ReductionDataset:
             
         self.CountTimes    = list(ds['entry1/instrument/detector/time'])
         self.Bex           = list(ds['entry1/instrument/crystal/bex'])
-        #self.Angle         = list(ds['entry1/instrument/crystal/m2om'])
         self.MonCts        = list(ds['entry1/monitor/bm1_counts'])
-        self.MonCountTimes = list(ds['entry1/monitor/time']) # NEW
-        
+        self.MonCountTimes = list(ds['entry1/monitor/time'])      
         self.ScanVariablename  = str(ds['entry1/instrument/crystal/scan_variable'])
         self.ScanVariable = list(ds['entry1/instrument/crystal/' + self.ScanVariablename])        
         
@@ -849,33 +1073,34 @@ class ReductionDataset:
         # read parameters from file
      
         self.Wavelength    = float(ds['entry1/instrument/crystal/wavelength'])         
-        self.MainDeadTime  = float(ds['entry1/instrument/detector/MainDeadTime' ])
         self.TransDeadTime = float(ds['entry1/instrument/detector/TransDeadTime'])
         self.dOmega        = float(ds['entry1/instrument/crystal/dOmega'])      
         self.gDQv          = float(ds['entry1/instrument/crystal/gDQv'])
         self.ScanVariable  = str(ds['entry1/instrument/crystal/scan_variable'])
         self.TimeStamp     = list(ds['entry1/time_stamp'])
-        try:
-            self.LS_C          = list(ds['entry1/sample/tc3/sensor/sensorValueC'])
-        except:
-            pass
+        self.start_time    = str(ds['entry1/start_time'])
         
         
-        
-              
-        # read parameters from file and possibly patch
-                
+        if TemperatureVTE_setpoint.value:   
+            self.TempvTE_sp       = float(ds['entry1/sample/tc2/Loop1/setpoint'][0])
+            self.TempvTE_sp_all   = list(ds['entry1/sample/tc2/Loop1/setpoint'])
+        if TemperatureVTE.value:
+            self.TempvTE          = float(ds['entry1/sample/tc2/Loop1/sensor'][0])
+            self.TempvTE_all      = list(ds['entry1/sample/tc2/Loop1/sensor'])
+        if TemperatureLSC.value:
+            self.TempLSC          = float(ds['entry1/sample/tc3/sensor/sensorValueC'][0])-273.15
+            self.TempLSC_all      = list(ds['entry1/sample/tc3/sensor/sensorValueC']) 
+        if TemperatureLSD.value:
+            self.TempLSD          = float(ds['entry1/sample/tc3/sensor/sensorValueD'][0])-273.15
+            self.TempLSD_all      = list(ds['entry1/sample/tc3/sensor/sensorValueD'])
+           
+        # read parameters from file and possibly patch               
         self.Thick         = TryGet(ds, ['entry1/sample/thickness'                   ], Thickness.value , Thickness_Patching.value ) / 10.0 # mm to cm            
         self.SampleName    = TryGet(ds, ['entry1/sample/name'                        ], SampleName.value , SampleName_Patching.value )
         self.SampleDescr   = TryGet(ds, ['entry1/sample/description'                 ], SampleDescr.value , SampleDescr_Patching.value )
         self.SampleBkg     = TryGet(ds, ['entry1/experiment/bkgLevel'                ], SampleBkg.value , SampleBkg_Patching.value )
-
-        #self.Magnet   = float(ds, ['entry1/data/BO1SO1'              ], Magnet.value)
-        #self.Temp     = float(ds, ['entry1/data/T1S2'                ], Temp.value)
-        
-        #print 'Magnet', self.Magnet.value
-        #print 'Temp', self.Temp.value
-   
+        self.MainDeadTime  = TryGet(ds, ['entry1/instrument/detector/MainDeadTime' ], DeadTime.value , DeadTime_Patching.value)
+        #self.Magnet   = float(ds, ['entry1/data/BO1SO1'              ], Magnet.value)   
         
         self.empLevel = empLevel.value
         self.empLevel_Error = empLevel_Error.value
@@ -885,10 +1110,28 @@ class ReductionDataset:
         self.ActualTime = range(len(self.Angle))
         self.widepoints = 0
         
-        self.start_time         = str(ds['entry1/start_time'])
-        print 'start time: ', self.start_time
+        start_time         = str(ds['entry1/start_time'])
+        print 'start time: ', start_time
         
-
+        sample_z = list(ds['entry1/sample/samz'])
+        sz = sample_z[0]
+        
+        # Check on actual sample positions
+        '''
+        #print 'Sample Z: ', str(sz)
+        if not ((sz >= 30 and sz <= 38) or 
+                (sz >=176 and sz <=184) or 
+                (sz >=321 and sz <= 328) or
+                (sz >=467 and sz <= 475) or 
+                (sz >=612 and sz <= 620)):  
+            print 'Sample Z: ', str(sz)
+            print ''
+            print ''
+            print 'WARNING SAMZ'
+            print ''
+            print ''
+            print ''
+        '''
   
         # tube ids
         tids = []
@@ -905,17 +1148,66 @@ class ReductionDataset:
 
         # sum selected tubes
         data = zeros(len(self.Angle))
+        data6 = zeros(len(self.Angle))
+        data7 = zeros(len(self.Angle))
+        
+        
         for tid in tids:
             if ds.hmm.ndim == 4:
-                data[:] += ds.hmm[:, 0, :, tid].sum(0) # hmm
+                #data[:] += ds.hmm[:, 0, :, tid].sum(0) # hmm 15.6.2017
+                #print 'test'               
+                
+                if limit_detector.value:
+                    #print 'limit_detector'
+                    y0 = int(detectorheight_start.value)
+                    yN = int(detectorheight_end.value) + 1 # python end range is exclusive
+                                       
+                    data[:] += ds.hmm[:, 0, y0:yN, tid].sum(0) # hmm
+                    
+                    data6[:] = ds.hmm[:, 0, y0:yN, 6].sum(0) # hmm to monitor flux/background
+                    data7[:] = ds.hmm[:, 0, y0:yN, 7].sum(0) # hmm to monitor flux/background
+                
+                else: 
+                    #print 'NOT limit_detector'
+                    data[:] += ds.hmm[:, 0, :, tid].sum(0) # hmm
+                    
+                    data6[:] = ds.hmm[:, 0, :, 6].sum(0) # hmm
+                    data7[:] = ds.hmm[:, 0, :, 7].sum(0) # hmm
+                    
+
             else:
-                data[:] += ds.hmm[:, :, tid].sum(0)    # hmm_xy       
+                data[:] += ds.hmm[:, :, tid].sum(0)    # hmm_xy  
+                
+                data6[:] += ds.hmm[:, :, 6].sum(0) # hmm
+                data7[:] += ds.hmm[:, :, 7].sum(0) # hmm     
                                 
-        DeadtimeCorrection(data, self.MainDeadTime, self.CountTimes)
-
-        self.DetCts    = list(data)
-        self.ErrDetCts = [sqrt(cts) for cts in self.DetCts]
-
+        #2018-07-10. Note that det correction wrong if the detector is limiting high countrates
+        if DeadTimeTypePara.value and DeadTimeTypeNonPara.value:
+            print 'Please choose only one deadtime correction'    
+        elif DeadTimeTypePara.value:                     
+            DeadtimeCorrection(data, self.MainDeadTime, self.CountTimes)
+            self.DetCts    = list(data)
+            self.ErrDetCts = [sqrt(cts) for cts in self.DetCts]
+            #DeadtimeCorrection(data6, self.MainDeadTime, self.CountTimes)
+            #self.Tube6Cts    = list(data6)
+            #DeadtimeCorrection(data7, self.MainDeadTime, self.CountTimes)
+            #self.Tube7Cts    = list(data7)
+        elif DeadTimeTypeNonPara.value:
+            DeadtimeCorrection_NonPara(data, self.MainDeadTime, self.CountTimes)        
+            self.DetCts    = list(data)
+            self.ErrDetCts = [sqrt(cts) for cts in self.DetCts]
+            #DeadtimeCorrection_NonPara(data6, self.MainDeadTime, self.CountTimes)
+            #self.Tube6Cts    = list(data6)
+            #DeadtimeCorrection_NonPara(data7, self.MainDeadTime, self.CountTimes)
+            #self.Tube7Cts    = list(data7)
+        else:
+            print 'no deadtime correction'
+            self.DetCts    = list(data)
+            self.ErrDetCts = [sqrt(cts) for cts in self.DetCts]
+            
+        self.Tube6Cts    = list(data6) # note that tube6 and tube7 are not considered for dt correction
+        self.Tube7Cts    = list(data7)
+        
         # transmission counts
         if abs(self.Wavelength - 4.74) < 0.01:
             tid = 10
@@ -926,14 +1218,12 @@ class ReductionDataset:
         else:
             raise Exception('unsupported wavelength')
             
-        if ds.hmm.ndim == 4:
+        # read in for transmission detector
+        if ds.hmm.ndim == 4:   
             data[:] = ds.hmm[:, 0, :, tid].sum(0) # hmm
         else:
-            data[:] = ds.hmm[:, :, tid].sum(0)    # hmm_xy
-        
-            
+            data[:] = ds.hmm[:, :, tid].sum(0)    # hmm_xy                    
         DeadtimeCorrection(data, self.TransDeadTime, self.CountTimes)
-        
         self.TransCts  = list(data) 
         
         
@@ -942,15 +1232,17 @@ class ReductionDataset:
         self.ErrDetCtr  = range(len(self.DetCts))
         self.TransCtr   = range(len(self.DetCts))
         self.MonCtr     = range(len(self.DetCts))
+        
+        self.Tube6Ctr   = range(len(self.DetCts))
+        self.Tube7Ctr   = range(len(self.DetCts))
                 
         
         ctTimes = self.CountTimes
         
-        # to ignore all the 0 times in the detector
-        
+        # to ignore all the 0 times in the detector       
         
         for i in xrange(len(self.DetCts)):    
-            if ctTimes[i] < 0.5:                        
+            if ctTimes[i] < 0.01:                        
                 print 'Please Ignore Data Point: ', i+1
                 print ''
                 ctTimes[i] = ctTimes[i] + 100.0
@@ -960,17 +1252,22 @@ class ReductionDataset:
             self.DetCtr[i]     = self.DetCts[i]    / ctTime
             self.ErrDetCtr[i]  = self.ErrDetCts[i] / ctTime
             self.TransCtr[i]   = self.TransCts[i]  / ctTime
+            
+            self.Tube6Ctr[i]  = self.Tube6Cts[i] / ctTime
+            self.Tube7Ctr[i]  = self.Tube7Cts[i]  / ctTime          
     
         ctTimes = self.MonCountTimes
         
         for i in xrange(len(ctTimes)):
-            ctTime = ctTimes[i]                  
+            if ctTimes[i] < 0.1:                        
+                print 'Please Ignore Data Point: ', i+1
+                print ''
+                ctTimes[i] = ctTimes[i] + 100.0
+            ctTime = ctTimes[i]
             self.MonCtr[i]     = self.MonCts[i]    / ctTime
            
-        # TAKE ACCOUNT OF BEAMMONITOR
-        
-        if use_beammonitor.value: 
-        
+        # TAKE ACCOUNT OF BEAMMONITOR       
+        if use_beammonitor.value:         
            mcr = self.defaultMCR
            for i in xrange(len(self.Angle)):
                if self.MonCtr[i] <0.0001: #to fix the 0-divison problem
@@ -981,6 +1278,7 @@ class ReductionDataset:
                self.DetCtr[i]    = self.DetCtr[i]    * f
                self.ErrDetCtr[i] = self.ErrDetCtr[i] * f
                self.TransCtr[i]  = self.TransCtr[i]  * f
+
   
      # CALCULATE TIME OF THE MEASUREMENT
     def MeasurementTime(self):   
@@ -1014,7 +1312,10 @@ class ReductionDataset:
         self.CountTimes = [self.CountTimes[item[0]] for item in info]
         self.Bex        = [self.Bex       [item[0]] for item in info]
         self.TimeStamp  = [self.TimeStamp [item[0]] for item in info]
-        self.ActualTime = [self.ActualTime[item[0]] for item in info]
+        self.ActualTime = [self.ActualTime[item[0]] for item in info]       
+        self.Tube6Ctr   = [self.Tube6Ctr  [item[0]] for item in info]
+        self.Tube7Ctr   = [self.Tube7Ctr  [item[0]] for item in info]
+        # should include temperatures
     
     def Append(self, other): # CHECK MISSING COUNTRATE? CHECK CHECK CHECK!!!
         self.Filename   += ';' + other.Filename
@@ -1027,6 +1328,9 @@ class ReductionDataset:
         self.CountTimes += other.CountTimes
         self.TimeStamp  += other.TimeStamp
         self.ActualTime += other.ActualTime
+        self.Tube6Ctr   += other.Tube6Ctr
+        self.Tube7Ctr   += other.Tube7Ctr
+        # should include temperatures
         
     def KeepOnly(self, toKeep):
         self.Angle      = [self.Angle[i]      for i in toKeep]
@@ -1038,34 +1342,10 @@ class ReductionDataset:
         self.Bex        = [self.Bex[i]        for i in toKeep]
         self.TimeStamp  = [self.TimeStamp[i]  for i in toKeep]
         self.ActualTime = [self.ActualTime[i] for i in toKeep]
-    '''        
-    def FindZeroAngle(self):
-        # find peak
-        x = self.Angle
-        y = self.DetCtr
-        i = y.index(builtin_max(y))
-
-        dy = slopeAt(y, i)
-        if dy < 0.0:
-            aX = x[i-1]
-            bX = x[i  ]
-            
-            aY = slopeAt(y, i-1)
-            bY = dy
-        else:
-            aX = x[i  ]
-            bX = x[i+1]
-            
-            aY = dy
-            bY = slopeAt(y, i+1)
-            
-        self.PeakAng = (aY*bX - aX*bY) / (aY - bY)
-        self.PeakVal = y[i];
-        
-        print "Peak Angle:", self.PeakAng
-        print "I(rock):", self.PeakVal
-        return self.PeakAng
-    '''
+        self.Tube6Ctr   = [self.Tube6Ctr[i]   for i in toKeep]
+        self.Tube7Ctr   = [self.Tube7Ctr[i]   for i in toKeep]
+        # should include temperatures
+ 
     def FindZeroAngle(self):
         from __builtin__ import max, min, sorted
         
@@ -1296,6 +1576,7 @@ class ReductionDataset:
                 result.append((x[i2 - 1], y1, i2 - 1))
             
         return result
+    
     def maximumX(self, x, y, i):
                 
         x0 = x[i - 1]
@@ -1310,7 +1591,6 @@ class ReductionDataset:
         y20 = y2 - y0
         
         return -0.5 * ((x2*x2 - x0*x0)*y10 - (x1*x1 - x0*x0)*y20) / ((x1 - x0)*y20 - (x2 - x0)*y10)
-
 
     def DetermineQVals(self):
         deg2rad = 3.14159265359 / 180
@@ -1332,6 +1612,8 @@ class ReductionDataset:
             self.Bex.reverse()
             self.TimeStamp.reverse()
             self.ActualTime.reverse()
+            self.Tube6Ctr.reverse()
+            self.Tube7Ctr.reverse()
 
     def FindTWideCtr(self):
 
@@ -1339,9 +1621,6 @@ class ReductionDataset:
         i0 = bisect_left(self.Qvals, level);
         
         if i0 == len(self.Qvals):
-            #print ''
-            #print "You don't have data past %f (1/A) - so TWide may not be reliable" % level
-            #print ''
             i0 = builtin_max(0, len(self.Qvals) - 5)
   
         sumTransCtr = 0
@@ -1367,20 +1646,11 @@ class ReductionDataset:
         
         dOmega = self.dOmega
         
-        samRock = self.PeakVal
-        samWide = self.TWideCtr
+        samRock = self.PeakVal # note: this might have been fixed
+        samWide = self.TWideCtr # note: see above
 
         empRock = emp.PeakVal
         empWide = emp.TWideCtr
-        
-        # under construction FIX
-        if fix_int0.value:
-            samRock = int0_fixed.value
-            print 'I(rock) is fixed to ', int0_fixed.value
-        if fix_Iwide.value:
-            samWide = Iwide_fixed.value
-            print 'I(wide) is fixed to ', Iwide_fixed.value
-
 
         self.TransRock  = samRock / empRock
         self.TransWide  = samWide / empWide
@@ -1391,8 +1661,11 @@ class ReductionDataset:
         print "T(sas) = Trock/Twide: %.4g" % (self.TransRock / self.TransWide)
         print '  '
         
+        self.MeasurementTime()
+        
         scale = 1.0 / (self.TransWide * self.Thick * dOmega * emp.PeakVal)                
-               
+        #print 'scale:' , scale   
+             
         maxq = emp.Qvals[-1]
         for i in xrange(len(self.Qvals)):
             wq = self.Qvals[i]
@@ -1405,7 +1678,7 @@ class ReductionDataset:
                 #tempErr = 0
                 #tempErr = 0 ### MISSING NEEDS TO BE CHANGED!!!
  
-            detCtr = self.DetCtr[i] - self.SampleBkg
+            detCtr = self.DetCtr[i] - self.SampleBkg #- 0.15 # if we forgot the shielding
             empCtr = tempI          - self.SampleBkg
 
             self.DetCtr[i]    = detCtr - self.TransRock * empCtr
@@ -1414,106 +1687,116 @@ class ReductionDataset:
             
             self.DetCtr[i]    *= scale
             self.ErrDetCtr[i] *= scale
+                                       
+
+    def SaveAbs(self, path, q_cut = False):
             
-                        
-
-    def SaveAbs(self, path):
-        
-
-        
         LE = '\n'
         with open(path, 'w') as fp:
             fp.write("CREATED: " + datetime.now().strftime("%a, %d %b %Y at %H:%M:%S") + LE) 
             fp.write("SAMPLE: " + self.SampleName + '; ' + self.SampleDescr + '; Thickness [cm]: %g' % (self.Thick) + LE)
             fp.write("SAMPLE: " + self.SampleName + '; ' + self.SampleDescr + '; Thickness [cm]: %g' % (self.Thick) + LE)
             fp.write("FILES: " + self.Filename.replace(';',',') + LE)
-            
 
-
-          
-            try:
-                pass
-                #fp.write("EMP LEVEL: %g ; BKG LEVEL: %g" % (self.empLevel, self.Emp.bkgLevel) + LE)
-            except:
-                pass
-                #fp.write("SAM PEAK ANGLE: %g" % self.PeakAng + LE)
-                #fp.write("EMP LEVEL: %g" % self.empLevel + LE)
-
-            # divergence, in terms of Q (1/A) 
             gdqv = self.gDQv
             
             doublepoints = 0
             doublepointsi = []
+                
+            if remove_duplicate_points.value:
+                preQ = float('nan')
+                for i in xrange(len(self.Qvals)):
+                    newQ = self.Qvals[i]                
+                    if preQ == newQ:
+                        doublepoints +=1
+                        doublepointsi.append(i)                
+                    if preQ != newQ:
+                        fp.write("%15.6g %15.3f %15.3f %15.6g %15.6g %15.6g" % (newQ, self.DetCtr[i], self.ErrDetCtr[i], -gdqv, -gdqv, -gdqv) + LE)                      
+                        preQ = newQ
+            else:
+                for i in xrange(len(self.Qvals)):
+                    fp.write("%15.6g %15.3f %15.3f %15.6g %15.6g %15.6g" % (self.Qvals[i], self.DetCtr[i], self.ErrDetCtr[i], -gdqv, -gdqv, -gdqv) + LE)
             
-            preQ = float('nan')
-            for i in xrange(len(self.Qvals)):
-                
-                # nest line is only temporary instead of grey text below. 
-                # trying to get rid of throwing out double points
-                fp.write("%15.6g %15.3f %15.3f %15.6g %15.6g %15.6g" % (self.Qvals[i], self.DetCtr[i], self.ErrDetCtr[i], -gdqv, -gdqv, -gdqv) + LE)
-                
-                
-                #newQ = self.Qvals[i]
-                #if preQ == newQ:
-                #    doublepoints +=1
-                #    doublepointsi.append(i)
-                #if preQ != newQ:
-                #    fp.write("%15.6g %15.3f %15.3f %15.6g %15.6g %15.6g" % (newQ, self.DetCtr[i], self.ErrDetCtr[i], -gdqv, -gdqv, -gdqv) + LE)
-                #    preQ = newQ
-            
-                   
             fp.write("AMBIENT BACKGROUND: %g" % self.SampleBkg + LE)
             fp.write("EMP LEVEL: %g " % (self.empLevel) + LE) 
             fp.write("EMP FILES: " + self.Emp.Filename.replace(';',',') + "; EMP LEVEL: %.4g " % self.empLevel + LE)
             fp.write("Trock = %.4f; Twide = %.4f; Tsas = %.4f" % (self.TransRock, self.TransWide, self.TransRock / self.TransWide) + LE)
             fp.write("SAM PEAK ANGLE: %.5f ; EMP PEAK ANGLE: %.5f" % (self.PeakAng, self.Emp.PeakAng) + LE)
+        
+        print ('Info: removed %i duplicate points in the full file: ' % doublepoints) + str(doublepointsi)
 
-        
-        print ('Info: removed %i duplicate points in this file: ' % doublepoints) + str(doublepointsi)
-        
-    '''
-    def SaveAbs(self, path):
-        
-
-        
+    def SaveAbs_cut(self, path):
+            
         LE = '\n'
         with open(path, 'w') as fp:
+            fp.write("CREATED: " + datetime.now().strftime("%a, %d %b %Y at %H:%M:%S") + LE) 
+            fp.write("SAMPLE: " + self.SampleName + '; ' + self.SampleDescr + '; Thickness [cm]: %g' % (self.Thick) + LE)        
             fp.write("FILES: " + self.Filename.replace(';',',') + LE)
-            fp.write("CREATED: " + datetime.now().strftime("%a, %d %b %Y at %H:%M:%S") + LE)
-            fp.write("SAMPLE: " + self.SampleName + '; ' + self.SampleDescr + '; Thickness [cm]: %g' % (self.Thick) + LE)
+            
+            gdqv = self.gDQv
+            
+            
+            doublepoints = 0
+            doublepointsi = []
+            
+            if remove_duplicate_points.value:                         
+                preQ = float('nan')
+                for i in xrange(len(self.Qvals_cut)):
+                    newQ = self.Qvals_cut[i]                
+                    if preQ == newQ:
+                        doublepoints +=1
+                        doublepointsi.append(i)                
+                    if preQ != newQ:
+                        fp.write("%15.6g %15.3f %15.3f %15.6g %15.6g %15.6g" % (newQ, self.DetCtr_cut[i], self.ErrDetCtr_cut[i], -gdqv, -gdqv, -gdqv) + LE)                      
+                        preQ = newQ
+            else:
+                for i in xrange(len(self.Qvals_cut)):
+                    fp.write("%15.6g %15.3f %15.3f %15.6g %15.6g %15.6g" % (self.Qvals_cut[i], self.DetCtr_cut[i], self.ErrDetCtr_cut[i], -gdqv, -gdqv, -gdqv) + LE)
+            
             fp.write("AMBIENT BACKGROUND: %g" % self.SampleBkg + LE)
             fp.write("EMP LEVEL: %g " % (self.empLevel) + LE) 
             fp.write("EMP FILES: " + self.Emp.Filename.replace(';',',') + "; EMP LEVEL: %.4g " % self.empLevel + LE)
             fp.write("Trock = %.4f; Twide = %.4f; Tsas = %.4f" % (self.TransRock, self.TransWide, self.TransRock / self.TransWide) + LE)
             fp.write("SAM PEAK ANGLE: %.5f ; EMP PEAK ANGLE: %.5f" % (self.PeakAng, self.Emp.PeakAng) + LE)
-          
-            try:
-                pass
-                #fp.write("EMP LEVEL: %g ; BKG LEVEL: %g" % (self.empLevel, self.Emp.bkgLevel) + LE)
-            except:
-                pass
-                #fp.write("SAM PEAK ANGLE: %g" % self.PeakAng + LE)
-                #fp.write("EMP LEVEL: %g" % self.empLevel + LE)
+        
+        print ('Info: removed %i duplicate points in the cut file: ' % doublepoints) + str(doublepointsi)
 
-            # divergence, in terms of Q (1/A) 
+    def SaveAbs_cut_Mantid(self, path):
+            
+        LE = '\n'
+        with open(path, 'w') as fp:
+            #fp.write("CREATED: " + datetime.now().strftime("%a, %d %b %Y at %H:%M:%S") + LE) 
+            #fp.write("SAMPLE: " + self.SampleName + '; ' + self.SampleDescr + '; Thickness [cm]: %g' % (self.Thick) + LE)        
+            #fp.write("FILES: " + self.Filename.replace(';',',') + LE)
+            
             gdqv = self.gDQv
+            
             
             doublepoints = 0
             doublepointsi = []
             
-            preQ = float('nan')
-            for i in xrange(len(self.Qvals)):
-                newQ = self.Qvals[i]
-                
-                if preQ == newQ:
-                    doublepoints +=1
-                    doublepointsi.append(i)
-                if preQ != newQ:
-                    fp.write("%15.6g %15.3f %15.3f %15.6g %15.6g %15.6g" % (newQ, self.DetCtr[i], self.ErrDetCtr[i], -gdqv, -gdqv, -gdqv) + LE)
-                    preQ = newQ
+            if remove_duplicate_points.value:                         
+                preQ = float('nan')
+                for i in xrange(len(self.Qvals_cut)):
+                    newQ = self.Qvals_cut[i]                
+                    if preQ == newQ:
+                        doublepoints +=1
+                        doublepointsi.append(i)                
+                    if preQ != newQ:
+                        fp.write("%15.6g, %15.3f, %15.3f" % (newQ, self.DetCtr_cut[i], self.ErrDetCtr_cut[i]) + LE)                      
+                        preQ = newQ
+            else:
+                for i in xrange(len(self.Qvals_cut)):
+                    fp.write("%15.6g, %15.3f, %15.3f" % (self.Qvals_cut[i], self.DetCtr_cut[i], self.ErrDetCtr_cut[i]) + LE)
+            
+            #fp.write("AMBIENT BACKGROUND: %g" % self.SampleBkg + LE)
+            #fp.write("EMP LEVEL: %g " % (self.empLevel) + LE) 
+            #fp.write("EMP FILES: " + self.Emp.Filename.replace(';',',') + "; EMP LEVEL: %.4g " % self.empLevel + LE)
+            #fp.write("Trock = %.4f; Twide = %.4f; Tsas = %.4f" % (self.TransRock, self.TransWide, self.TransRock / self.TransWide) + LE)
+            #fp.write("SAM PEAK ANGLE: %.5f ; EMP PEAK ANGLE: %.5f" % (self.PeakAng, self.Emp.PeakAng) + LE)
         
-        print ('Info: removed %i duplicate points in this file: ' % doublepoints) + str(doublepointsi)
-    '''
+        print ('Info: removed %i duplicate points in the cut file: ' % doublepoints) + str(doublepointsi)
+
                                        
     def SaveRaw(self, path):
         LE = '\n'
@@ -1529,8 +1812,6 @@ class ReductionDataset:
             if convert2q.value:
                 fp.write('%15s' % 'm2om')
             fp.write('%15s' % 'det_time')
-            #fp.write('%15s' % 'bex')
-            #fp.write('%15s' % 'timestamp_no')
             fp.write('%15s' % 'actual_time')
             fp.write('%15s' % 'diff_time')
             fp.write('\n')
@@ -1547,10 +1828,7 @@ class ReductionDataset:
             if convert2q.value:
                 fp.write('%15s' % '[deg]')
             fp.write('%15s' % '[s]')
-            #fp.write('%15s' % '[mm]')
             fp.write('%15s' % '[s]')
-            #fp.write('%15s' % '[s]')
-            #fp.write('%15s' % '[s]')
             fp.write('\n')
 
             
@@ -1561,9 +1839,6 @@ class ReductionDataset:
                 if convert2q.value:
                     fp.write("%15f" % (self.Angle[i]))
                 fp.write("%15f %15f %15f" % (self.CountTimes[i],self.ActualTime[i], self.ActualTime[i] - self.CountTimes[i]))
-                #fp.write("%15f" % (self.TimeStamp[i]))
-                #fp.write("%15f" % (self.CountTimes[i]))
-                #fp.write("%15f" % (self.Bex[i]))
                 fp.write('\n')
             
             fp.write("FILES: " + self.Filename.replace('.nx.hdf','') + ';  ' + LE)         
@@ -1578,11 +1853,66 @@ class ReductionDataset:
                 pass   
             fp.write("TOTAL_TIME [h:min:sec]: " + self.TotalTime_form + LE)
                 
+    def SaveRaw_Mantid(self, path):
+        LE = '\n'
+        with open(path, 'w') as fp:        
+            if convert2q.value:
+                fp.write('%15s'',' % 'q')
+            else:
+                fp.write('%15s' % self.ScanVariablename)
+            fp.write('%15s'',' % self.Filename.replace('.nx.hdf','')) 
+            fp.write('%15s' % 'y_error') 
+            #fp.write('%15s' % 'data_trans')
+            #fp.write('%15s' % 'beam_monitor')
+            #if convert2q.value:
+            #    fp.write('%15s' % 'm2om')
+            #fp.write('%15s' % 'det_time')
+            #fp.write('%15s' % 'actual_time')
+            #fp.write('%15s' % 'diff_time')
+            fp.write('\n')
             
+            
+            if convert2q.value:
+                fp.write('%15s'',' % '[1/A]')
+            else:
+                fp.write('%15s' % '[],')
+            fp.write('%15s'',' % '[c/s]') 
+            fp.write('%15s' % '[c/s]') 
+            #fp.write('%15s' % '[c/s],')
+            #fp.write('%15s' % '[c/s],')
+            #if convert2q.value:
+            #    fp.write('%15s' % '[deg]')
+            #fp.write('%15s' % '[s]')
+            #fp.write('%15s' % '[s]')
+            fp.write('\n')
+
+            
+            
+            for i in xrange(len(self.Qvals)):
+                fp.write("%15.8g, %15.3f, %15.3f" % (self.Qvals[i], self.DetCtr[i], self.ErrDetCtr[i]))
+                
+                #fp.write("%15.3f %15.3f" % (self.TransCtr[i], self.MonCtr[i]))
+                #if convert2q.value:
+                #    fp.write("%15f" % (self.Angle[i]))
+                #fp.write("%15f %15f %15f" % (self.CountTimes[i],self.ActualTime[i], self.ActualTime[i] - self.CountTimes[i]))
+                fp.write('\n')
+            
+            #fp.write("FILES: " + self.Filename.replace('.nx.hdf','') + ';  ' + LE)         
+            #fp.write("CREATED: " + datetime.now().strftime("%a, %d %b %Y at %H:%M:%S") + LE)
+            #fp.write("SAMPLE: " + self.SampleName + LE)
+            #fp.write("SAMPLE_DESCRIPTION: " + self.SampleDescr + LE) 
+            #fp.write("SAMPLE_THICKNESS [cm]: %g" % self.Thick + LE)
+            #fp.write("AMBIENT_BACKGROUND [c/s]: %g" % self.SampleBkg + LE)
+            #try:
+            #   fp.write("PEAK_ANGLE [deg]: %.5f" % self.PeakAng + LE)
+            #except:
+            #    pass   
+            #fp.write("TOTAL_TIME [h:min:sec]: " + self.TotalTime_form + LE)            
                 
 def DeadtimeCorrection(counts, deadTime, countTimes):
     # x1 = x0 - (x0 - y*e^cx0) / (1 - cx0)
         
+    #print 'paralysable', deadTime
     for i in xrange(len(counts)):
         if countTimes[i] == 0:
             counts[i] = 0
@@ -1600,6 +1930,20 @@ def DeadtimeCorrection(counts, deadTime, countTimes):
             counts[i] = x
     
             #tube[i] = tube[i] * (1 / (1.0 - tube[i] * deadTime / countTimes[i]))        
+
+
+# 2018-07-10
+def DeadtimeCorrection_NonPara(counts, deadTime, countTimes):
+    
+    print 'non-paralysable', deadTime
+    for i in xrange(len(counts)):
+        if countTimes[i] == 0:
+            counts[i] = 0
+            
+        else:
+            counts[i] = counts[i] * (1 / (1.0 - counts[i] * deadTime / countTimes[i]))        
+            
+#end
 
 def TryGet(ds, pathList, default, forceDefault=False):
     if forceDefault:
@@ -1670,7 +2014,7 @@ def GetToKeepFilter(maxCount, ignorePtsStr):
                 
     return toKeep
 
-def PlotDataset(plot, ds, title):
+def PlotDataset(plot, ds, title, q_cut = False):
     data = zeros(len(ds.Qvals))
     data[:]     = ds.DetCtr
     data.var[:] = Array(ds.ErrDetCtr) ** 2 # nice way of cheating for now
@@ -1679,6 +2023,16 @@ def PlotDataset(plot, ds, title):
     axis0[:]    = ds.Qvals
     
     plot.add_dataset(data)
+    
+    if q_cut:
+        data_cut = Dataset(ds.DetCtr_cut, var = ds.ErrDetCtr_cut*100, 
+                           axes = [ds.Qvals_cut])             
+        plot.add_dataset(data_cut)
+        
+        x = ds.Qvals_cut[0]
+        y = ds.DetCtr_cut[0]
+        plot.add_marker(x, y, 'red')
+        
     plot.title    = 'Main Detector'
     plot.x_label = str(ds.ScanVariablename)
     if convert2q.value:
@@ -1688,10 +2042,10 @@ def PlotDataset(plot, ds, title):
     plot.set_log_y_on(True)
     plot.y_range = [0.1, data.max()]
     
+    
     # under construction
 
-           
-def PlotDataset_log(plot, ds, title):
+def PlotDataset_log(plot, ds, title, q_cut = False):
     data = zeros(len(ds.Qvals))
     data[:]     = ds.DetCtr
     data.err    = ds.ErrDetCtr # there should be an [:] but needs to be fixed in Gumtree
@@ -1700,6 +2054,15 @@ def PlotDataset_log(plot, ds, title):
     axis0[:]    = ds.Qvals
   
     plot.add_dataset(data)
+    if q_cut:
+        data_cut = Dataset(ds.DetCtr_cut, var = ds.ErrDetCtr_cut*100, 
+                           axes = [ds.Qvals_cut])             
+        plot.add_dataset(data_cut)
+        
+        x = ds.Qvals_cut[0]
+        y = ds.DetCtr_cut[0]
+        plot.add_marker(x, y, 'red')
+        
     plot.title    = 'Main Detector'
     plot.x_label = str(ds.ScanVariablename)
     if convert2q.value:
@@ -1708,7 +2071,7 @@ def PlotDataset_log(plot, ds, title):
     plot.set_mouse_follower_precision(6,2,2)
     plot.set_log_x_on(True)
     plot.set_log_y_on(True)
-    plot.x_range = [1e-6, 0.05]
+    plot.x_range = [1e-7, 0.05]
     plot.y_range = [0.1, data.max()]
 #    plot.y_min = 0.1
     
@@ -1738,7 +2101,10 @@ def PlotTransmissionDataset(plot, ds, title):
        
 def PlotMonitorDataset(plot, ds, title):
     data = zeros(len(ds.Qvals))
-    data[:]     = ds.MonCtr
+    if use_medianMCRPlot.value: 
+        data[:]     = Array(ds.MonCtr)/ds.defaultMCR
+    else:
+        data[:]     = ds.MonCtr
     data.var[:] = 0
     data.title  = title
     axis0       = data.axes[0]
@@ -1746,6 +2112,39 @@ def PlotMonitorDataset(plot, ds, title):
     
     plot.add_dataset(data)
     plot.title = 'Beam Monitor'
+    plot.x_label = str(ds.ScanVariablename)
+    if convert2q.value:
+        plot.x_label = 'q (1/Angstrom)'
+    plot.y_label = 'intensity (counts/sec)'
+    plot.set_mouse_follower_precision(6,2,2)
+    
+def PlotTube67Dataset(plot, ds, tube, title):
+    data = zeros(len(ds.Qvals))
+    if tube == 'tube6':
+        #data[:]     = ds.Tube6Ctr[:]
+        if use_medianMCRPlot.value:            
+            data[:]     = Array(ds.Tube6Ctr)/547
+        else:
+            data[:]     = ds.Tube6Ctr[:]
+        data.var[:] = 0
+        data.title  = title + 'tube6'
+        axis0       = data.axes[0]
+        axis0[:]    = ds.Qvals
+    if tube == 'tube7':
+        #data[:]     = ds.Tube7Ctr[:]
+        if use_medianMCRPlot.value:
+            data[:]     = Array(ds.Tube7Ctr)/155
+        else:
+            data[:]     = ds.Tube7Ctr[:]
+        data.var[:] = 0
+        data.title  = title + 'tube7'
+        axis0       = data.axes[0]
+        axis0[:]    = ds.Qvals
+                
+    
+    plot.add_dataset(data)
+    
+    plot.title = 'Monitor flux/Background'
     plot.x_label = str(ds.ScanVariablename)
     if convert2q.value:
         plot.x_label = 'q (1/Angstrom)'

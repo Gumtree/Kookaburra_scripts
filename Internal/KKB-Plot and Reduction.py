@@ -184,6 +184,17 @@ DeadTimeTypePara.title = 'Paralysable'
 DeadTimeTypeNonPara = Par('bool', False)
 DeadTimeTypeNonPara.title = 'Non-paralysable'
 
+TemperatureVTE_setpoint = Par('bool', False)
+TemperatureVTE_setpoint.title = 'Temperature VTE setpoint'
+
+TemperatureVTE = Par('bool', False)
+TemperatureVTE.title = 'Temperature VTE'
+
+TemperatureLSC = Par('bool', False)
+TemperatureLSC.title = 'Temperature LS-C'
+
+TemperatureLSD = Par('bool', False)
+TemperatureLSD.title = 'Temperature LS-D'
 
 
 
@@ -256,10 +267,20 @@ def __run_script__(fns):
         
     else:
         ds.Qvals = copy(ds.Angle)
-            
     
     
-    ds.SaveRaw(path + filename + '.dat')
+    if TemperatureVTE_setpoint.value:   
+            ds.SaveRaw(path + filename + '_' + ds.SampleName + '_tempVTEsp_' + str(int(ds.TempvTE_sp)) + 'C.dat')
+    elif TemperatureVTE.value:
+            ds.SaveRaw(path + filename + '_' + ds.SampleName + '_tempVTE_' + str(int(ds.TempvTE)) + 'C.dat')
+    elif TemperatureLSC.value:
+            ds.SaveRaw(path + filename + '_' + ds.SampleName + '_tempLSC_' + str(int(ds.TempLSC)) + 'C.dat')
+    elif TemperatureLSD.value:
+            ds.SaveRaw(path + filename + '_' + ds.SampleName + '_tempLSD_' + str(int(ds.TempLSD)) + 'C.dat')
+    else:
+        #ds.SaveRaw(path + filename + '_' + ds.SampleName + '.dat')
+        ds.SaveRaw(path + filename + '.dat')
+        
     
     # determine median beam-monitor count rate
     buffer = list(ds.MonCtr)
@@ -563,6 +584,7 @@ def reduceStitchedFiles():
     ds.CorrectData(em)
     
     q_cut = False # to cut the low q-values
+    
     if limit_lowq.value:
         q_cut = True
         ds.Qvals_cut = []
@@ -574,13 +596,39 @@ def reduceStitchedFiles():
                 ds.Qvals_cut.append(ds.Qvals[i])
                 ds.DetCtr_cut.append(ds.DetCtr[i])
                 ds.ErrDetCtr_cut.append(ds.ErrDetCtr[i])
-        ds.SaveAbs_cut(path + filename + '_' + ds.SampleName + '-abs_cut.dat')
+                
+        if TemperatureVTE_setpoint.value:   
+                ds.SaveAbs_cut(path + filename + '_' + ds.SampleName + '_tempVTEsp_' + str(int(ds.TempvTE_sp)) + 'C-abs_cut.dat')
+        elif TemperatureVTE.value:
+                ds.SaveAbs_cut(path + filename + '_' + ds.SampleName + '_tempVTE_' + str(int(ds.TempvTE)) + 'C-abs_cut.dat')
+        elif TemperatureLSC.value:
+                ds.SaveAbs_cut(path + filename + '_' + ds.SampleName + '_tempLSC_' + str(int(ds.TempLSC)) + 'C-abs_cut.dat')
+        elif TemperatureLSD.value:
+                ds.SaveAbs_cut(path + filename + '_' + ds.SampleName + '_tempLSD_' + str(int(ds.TempLSD)) + 'C-abs_cut.dat')
+        else:
+            ds.SaveAbs_cut(path + filename + '_' + ds.SampleName + '-abs_cut.dat')
+        
+        
+        
+        #ds.SaveAbs_cut(path + filename + '_' + ds.SampleName + '-abs_cut.dat')
+        #ds.SaveAbs_cut(path + filename + '_' + ds.SampleName + '_temp_' + str(ds.sampletemp) + '-abs_cut.dat')
         #ds.SaveAbs_cut(path + filename + '_' + ds.SampleName + '.dat')
         #ds.SaveAbs_cut(path + filename + '-abs_cut.dat')   
         
 
+    if TemperatureVTE_setpoint.value:   
+            ds.SaveAbs(path + filename + '_' + ds.SampleName + '_tempVTEsp_' + str(int(ds.TempvTE_sp)) + 'C-abs.dat')
+    elif TemperatureVTE.value:
+            ds.SaveAbs(path + filename + '_' + ds.SampleName + '_tempVTE_' + str(int(ds.TempvTE)) + 'C-abs.dat')
+    elif TemperatureLSC.value:
+            ds.SaveAbs(path + filename + '_' + ds.SampleName + '_tempLSC_' + str(int(ds.TempLSC)) + 'C-abs.dat')
+    elif TemperatureLSD.value:
+            ds.SaveAbs(path + filename + '_' + ds.SampleName + '_tempLSD_' + str(int(ds.TempLSD)) + 'C-abs.dat')
+    else:
+        ds.SaveAbs(path + filename + '_' + ds.SampleName + '-abs.dat')
     
-    ds.SaveAbs(path + filename + '_' + ds.SampleName + '-abs.dat')
+    #ds.SaveAbs(path + filename + '_' + ds.SampleName + '_temp_' + str(ds.sampletemp) + '-abs.dat')
+    #ds.SaveAbs(path + filename + '_' + ds.SampleName + '-abs.dat')
     #ds.SaveAbs(path + filename + samplename + '-abs.dat')
     
     PlotDataset_log(Plot3, ds, 'ABS', q_cut)
@@ -687,8 +735,7 @@ def reduceBatchFiles():
 
         # correction
         ds.CorrectData(em)
-        ds.SaveAbs(path + filename + '-abs.dat')
-        
+        ds.SaveAbs(path + filename + '-abs.dat')        
         
         
         q_cut = False # to cut the low q-values
@@ -845,6 +892,11 @@ g6.numColumns = 3
 g6.add(DeadTime_FromFile,DeadTime_Patching,DeadTime,
        DeadTimeTypePara, DeadTimeTypeNonPara)   
 
+g7 = Group('Advanced Settings Temperature')
+g7.numColumns = 2
+g7.add(TemperatureVTE_setpoint,TemperatureVTE,
+       TemperatureLSC, TemperatureLSD)
+
 
 
 
@@ -916,6 +968,32 @@ class ReductionDataset:
         self.gDQv          = float(ds['entry1/instrument/crystal/gDQv'])
         self.ScanVariable  = str(ds['entry1/instrument/crystal/scan_variable'])
         self.TimeStamp     = list(ds['entry1/time_stamp'])
+        
+        
+        if TemperatureVTE_setpoint.value:   
+            self.TempvTE_sp       = float(ds['entry1/sample/tc2/Loop1/setpoint'][0])
+            print self.TempvTE_sp
+        if TemperatureVTE.value:
+            self.TempvTE          = float(ds['entry1/sample/tc2/Loop1/sensor'][0])
+            print self.TempvTE
+        if TemperatureLSC.value:
+            self.TempLSC          = float(ds['entry1/sample/tc3/sensor/sensorValueC'][0])-273.15
+            print self.TempLSC 
+        if TemperatureLSD.value:
+            self.TempLSD          = float(ds['entry1/sample/tc3/sensor/sensorValueD'][0])-273.15
+            print self.TempLSD 
+            
+        #self.TempLS        = list(ds['entry1/sample/tc3/sensor/sensorValueC'])
+        
+        #g7.add(TemperatureVTE_setpoint,TemperatureVTE,
+       #TemperatureLSC, TemperatureLSD)
+        
+        
+        #self.sampletemp = int(self.TempLS[-1]-273.15)
+        
+        #print ''
+        #print 'Temperature Stage:', self.TempvTE[-1], 'Temperature Sample:', self.TempLS[-1]-273.15
+        #print ''
 
         
         
@@ -929,10 +1007,12 @@ class ReductionDataset:
         self.SampleBkg     = TryGet(ds, ['entry1/experiment/bkgLevel'                ], SampleBkg.value , SampleBkg_Patching.value )
         self.MainDeadTime  = TryGet(ds, ['entry1/instrument/detector/MainDeadTime' ], DeadTime.value , DeadTime_Patching.value)
         #self.Magnet   = float(ds, ['entry1/data/BO1SO1'              ], Magnet.value)
-        #self.Temp     = float(ds, ['entry1/data/T1S2'                ], Temp.value)
+
         
         #print 'Magnet', self.Magnet.value
         #print 'Temp', self.Temp.value
+        
+        
    
         
         self.empLevel = empLevel.value
@@ -1572,6 +1652,12 @@ class ReductionDataset:
         print '  '
         
         self.MeasurementTime()
+        
+        
+        #print 'self.TransWide', self.TransWide
+        #print 'self.Thick', self.Thick
+        #print 'dOmega', dOmega
+        #print 'emp.PeakVal', emp.PeakVal
         
         scale = 1.0 / (self.TransWide * self.Thick * dOmega * emp.PeakVal)                
         

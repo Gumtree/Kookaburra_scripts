@@ -107,20 +107,23 @@ g0.add(pmchi_tick, pmom_tick, bex_tick, m1chi_tick, m1x_tick, m1om_tick,
        ss1vg_tick, ss1hg_tick, ss1vo_tick, ss1ho_tick)
 
 
-tempSetpoint_tick = Par('bool', False)
-tempSetpoint_tick.title = '  Setpoint'
+tempSensorC_tick = Par('bool', False)
+tempSensorC_tick.title = '  SensorC'
 
-tempSensorA_tick = Par('bool', False)
-tempSensorA_tick.title = '  SensorA'
+tempSensorD_tick = Par('bool', False)
+tempSensorD_tick.title = '  SensorD'
 
-tempSensorB_tick = Par('bool', False)
-tempSensorB_tick.title = '  SensorB'
+tempvTE_sp_tick = Par('bool', False)
+tempvTE_sp_tick.title = '  vTE setpoint'
+
+tempvTE_sensor_tick = Par('bool', False)
+tempvTE_sensor_tick.title = '  vTE sensor'
 
 
 
 g0 = Group('Temp Settings:')
 g0.numColumns = 3
-g0.add(tempSetpoint_tick, tempSensorA_tick, tempSensorB_tick)
+g0.add(tempvTE_sp_tick,tempvTE_sensor_tick, tempSensorC_tick, tempSensorD_tick)
 
 
 
@@ -418,7 +421,6 @@ def __run_script__(fns):
                 
             if ss1ho_tick.value:                
                 ds.__iDictionary__.addEntry('ss1ho', 'entry1/instrument/slits/gaps/ss1ho')
-                #print 'ds.ss1ho', str(ds.ss1ho[0])
                 try:
                     data.append(str(ds.ss1ho[0]))
                 except:
@@ -426,33 +428,42 @@ def __run_script__(fns):
                 header.append('ss1ho')
                 
                 
-            if tempSetpoint_tick.value:                
-                ds.__iDictionary__.addEntry('temp_setpoint', 'entry1/sample/tc1/Loop1/setpoint')
+            if tempSensorC_tick.value:                
+                ds.__iDictionary__.addEntry('sensorC', 'entry1/sample/tc3/sensor/sensorValueC')
+                #print ds.sensorC
+                try:
+                    sensorC0 = float(ds.sensorC[0])-273.15
+                    data.append(str(sensorC0))
+                except:
+                    data.append(str(ds.sensorC[0]))
+                header.append('sensorC')
+                
+            if tempSensorD_tick.value:                
+                ds.__iDictionary__.addEntry('sensorD', 'entry1/sample/tc3/sensor/sensorValueD')
+                try:
+                    sensorD0 = float(ds.sensorD[0])-273.15
+                    data.append(str(sensorD0))
+                except:
+                    data.append(str(ds.sensorD[0]))
+                header.append('sensorD')
+                
+            if tempvTE_sp_tick.value:                
+                ds.__iDictionary__.addEntry('vTE_setpoint', 'entry1/sample/tc2/Loop1/vSP')
                 #print 'ds.ss1ho', str(ds.ss1ho[0])
                 try:
-                    data.append(str(ds.temp_setpoint[0]))
+                    data.append(str(ds.vTE_setpoint[0]))
+                    header.append('vTE_setpoint')
                 except:
-                    data.append(str(ds.temp_setpoint))
-                header.append('temp_setpoint')
-                
-            if tempSensorA_tick.value:                
-                ds.__iDictionary__.addEntry('sensorA', 'entry1/sample/tc2/sensor/sensorValueA')
-                try:
-                    sensorA0 = float(ds.sensorA[0])-273.15
-                    data.append(str(sensorA0))
-                except:
-                    data.append(str(ds.sensorA[0]))
-                header.append('sensorA')
-                
-            if tempSensorA_tick.value:                
-                ds.__iDictionary__.addEntry('sensorB', 'entry1/sample/tc2/sensor/sensorValueB')
+                    pass
+
+            if tempvTE_sensor_tick.value:                
+                ds.__iDictionary__.addEntry('vTE_sensor', 'entry1/sample/tc2/Loop1/sensor')
                 #print 'ds.ss1ho', str(ds.ss1ho[0])
                 try:
-                    sensorB0 = float(ds.sensorB[0])-273.15
-                    data.append(str(sensorB0))
+                    data.append(str(ds.vTE_sensor[0]))
+                    header.append('vTE_sensor')
                 except:
-                    data.append(str(ds.sensorB))
-                header.append('sensorB')
+                    pass
             
             
             if ReactorPower_tick.value:                
@@ -465,7 +476,7 @@ def __run_script__(fns):
                 header.append('ReactorPower')
                 
                 
-            if tempSetpoint_tick.value:                
+            if CNSout_tick.value:                
                 ds.__iDictionary__.addEntry('CNS_out', 'entry1/instrument/source/cns_out')
                 #print 'ds.ss1ho', str(ds.ss1ho[0])
                 try:

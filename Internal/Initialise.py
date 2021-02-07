@@ -37,7 +37,7 @@ if not fi.exists():
     if not fi.mkdirs():
         print 'Error: failed to make directory: ' + __buffer_log_file__
 __history_log_file__ = __buffer_log_file__ + '/History.txt'
-__buffer_log_file__ += '/LogFile.txt'
+__buffer_log_file__ += '/LogFile_new.txt'
 __buffer_logger__ = open(__buffer_log_file__, 'a')
 __history_logger__ = open(__history_log_file__, 'a')
 
