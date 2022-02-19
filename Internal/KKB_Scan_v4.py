@@ -1529,7 +1529,7 @@ def startScan(configModel):
                         
                     time.sleep(5)
                     sics.execute('histmem start')
-                    time.sleep(5)
+                    time.sleep(10)
                     
                     if mode == 'count_roi':
                         print 'count_roi'
@@ -1911,6 +1911,10 @@ def btnPlot_clicked():
     if q[-1] > 1e-6 :
         Plot2.x_range = [1e-6, q[-1]]
     
+    # reset ftting parameter for new curve to be fit
+    #peak_pos.value = float('nan')
+    #FWHM.value = float('nan')
+
     fit_curve()
         
 def convert2q(angles, reference, wavelength):

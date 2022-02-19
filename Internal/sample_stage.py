@@ -104,8 +104,43 @@ class KKB06cells(AbstractSampleStage):
 class KKB06cells_Shroud(AbstractSampleStage):
     ## 28.11.2018 LdC
     name = "KKB 6 Cells Tumbler Shroud"
-    in_service = True
+    in_service = False
     index_samz_pairs = [('1', 40.3),
+                        ('2', 145.5), 
+                        ('3', 250.7), 
+                        ('4', 355.9), 
+                        ('5', 461.1),
+                        ('6', 566.3),                       
+                        ]
+
+class KKB06cells_som(AbstractSampleStage):
+    ## 28.11.2018 LdC
+    name = "KKB 6 Cells Tumbler som"
+    in_service = True
+    index_samz_pairs = [('1', -12.8),
+                        ('2', 92.4),
+                        ('3', 197.6),
+                        ('4', 302.8), 
+                        ('5', 408.0), 
+                        ('6', 513.2),                      
+                        ]
+    
+class KKB06cells_Mark_NIR(AbstractSampleStage):
+    ## 28.11.2018 LdC
+    name = "KKB 6 Cells Mark NIR"
+    in_service = False
+    index_samz_pairs = [('2', 92.4),
+                        ('3', 197.6),
+                        ('4', 302.8), 
+                        ('5', 417.0),
+                        ('6', 513.2),                       
+                        ]
+    
+class KKB06cells_Shroud_Luke(AbstractSampleStage):
+    ## 28.11.2018 LdC
+    name = "KKB 6 Cells Luke"
+    in_service = False
+    index_samz_pairs = [('1', 46.0), # check this after alignment
                         ('2', 145.5), 
                         ('3', 250.7), 
                         ('4', 355.9), 
@@ -161,6 +196,7 @@ class KKB05Roundcells(AbstractSampleStage):
                         ('5', 614),
                         ]
     
+    
 class KKB05cells(AbstractSampleStage):
     # updated 18.6.2019 with new aperture
     name = "KKB 5 Cells"
@@ -173,15 +209,39 @@ class KKB05cells(AbstractSampleStage):
                         ('5', 613),
                         ]
     
+class KKB05cells_som(AbstractSampleStage):
+    # updated 12.2.2022 29mm aperture aligned by eye
+    name = "KKB 5 Cells som"
+    in_service = False
+    index_samz_pairs = [
+                        ('1', -20.5), 
+                        ('2', 125.0), 
+                        ('3', 270.0), 
+                        ('4', 416.0),
+                        ('5', 561.0),
+                        ]
+    
+class KKB05Roundcells_12mm_som(AbstractSampleStage):
+    name = "KKB 5 Round Cells 12mm aperture som"
+    in_service = False
+    index_samz_pairs = [
+                        ('1', -23.4),
+                        ('2', 122.1), 
+                        ('3', 267.6), 
+                        ('4', 413.1),
+                        ('5', 558.6),
+                        ]
+    
 class SANS_Demountable_12mmAperture(AbstractSampleStage): #27.10.2020 with apsel=3, and samx -6
+    # 3.3.2021 With 12mm Qkk aperture in pos3
     name = "SANS Demountable 5 Cells"
     in_service = False
     index_samz_pairs = [
-                        ('1', 31.0),
-                        ('2', 175.5),
-                        ('3', 321.5), # CHECK TROUBLESOME
-                        ('4', 467.5),
-                        ('5', 613.0),
+                        ('1', 32.0),
+                        ('2', 176.5),
+                        ('3', 322.5), # CHECK TROUBLESOME
+                        ('4', 468.5),
+                        ('5', 614.0),
                         ]
 '''   commented out 27.10.2020
 class SANS_Hellma_10mmAperture(AbstractSampleStage):

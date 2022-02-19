@@ -71,7 +71,7 @@ scan_variable = Par('string', 'm2om [deg]', options = [
     'ss2u [mm]', 'ss2d [mm]', 'ss2l [mm]', 'ss2r [mm]',
     'ss1hg [mm]', 'ss1ho [mm]', 'ss1vg [mm]', 'ss1vo [mm]',
     'ss2hg [mm]', 'ss2ho [mm]', 'ss2vg [mm]', 'ss2vo [mm]', 
-    'index'])
+    'apsel [mm]','index', 'som [deg]'])
 
 scan_variable.title = 'Scan Variable'
       
@@ -189,6 +189,7 @@ def proc_fn(path):
     ds.__iDictionary__.addEntry('pmom', 'entry1/instrument/crystal/pmom')
     ds.__iDictionary__.addEntry('pmchi', 'entry1/instrument/crystal/pmchi')
     ds.__iDictionary__.addEntry('samz', 'entry1/sample/samz')
+    ds.__iDictionary__.addEntry('som', 'entry1/sample/som')
     ds.__iDictionary__.addEntry('ss1u', 'entry1/instrument/slits/ss1u')
     ds.__iDictionary__.addEntry('ss1d', 'entry1/instrument/slits/ss1d')
     ds.__iDictionary__.addEntry('ss1r', 'entry1/instrument/slits/ss1r')
@@ -205,6 +206,7 @@ def proc_fn(path):
     ds.__iDictionary__.addEntry('ss2ho', 'entry1/instrument/slits/gaps/ss2ho')
     ds.__iDictionary__.addEntry('ss2vg', 'entry1/instrument/slits/gaps/ss2vg')
     ds.__iDictionary__.addEntry('ss2vo', 'entry1/instrument/slits/gaps/ss2vo')
+    ds.__iDictionary__.addEntry('apsel', 'entry1/instrument/slits/apsel')
     ds.__iDictionary__.addEntry('bm1_counts', 'entry1/monitor/bm1_counts')
     ds.__iDictionary__.addEntry('bm1_time', 'entry1/monitor/bm1_time')
     ds.__iDictionary__.addEntry('samplename', 'entry1/sample/name')

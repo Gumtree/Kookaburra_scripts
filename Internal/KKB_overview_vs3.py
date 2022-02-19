@@ -3,7 +3,7 @@ __script__.title = 'KKB Overview'
 __script__.version = '1.1'
 
 # 2018-07-12 include deadtimes
-# 2021-05-16 Temperatures are missing
+# 2021-05-22 Temperatures are tc1,tc2 and tc3 included
 
 
 __FOLDER_PATH__ = 'V:/shared/KKB Logbook/Temp Plot Data Repository/'
@@ -106,72 +106,18 @@ g0.add(pmchi_tick, pmom_tick, bex_tick, m1chi_tick, m1x_tick, m1om_tick,
        ss1vg_tick, ss1hg_tick, ss1vo_tick, ss1ho_tick)
 
 
+temp_CellHeater_tick = Par('bool', False)
+temp_CellHeater_tick.title = '  Cell Heaters tc1'
 
-'''
-tempSetpoint_tick = Par('bool', False)
-tempSetpoint_tick.title = '  Setpoint'
+temp_Huber_tick = Par('bool', False)
+temp_Huber_tick.title = '  Huber bath tc2'
 
-tempSensorA_tick = Par('bool', False)
-tempSensorA_tick.title = '  SensorA'
-
-tempSensorB_tick = Par('bool', False)
-tempSensorB_tick.title = '  SensorB'
+temp_Lakeshore_tick = Par('bool', False)
+temp_Lakeshore_tick.title = '  Lakeshore tc3'
 
 g0 = Group('Temp Settings:')
-g0.numColumns = 3
-g0.add(tempSetpoint_tick, tempSensorA_tick, tempSensorB_tick)
-'''
-
-
-temp_setVTE_tick = Par('bool', False)
-temp_setVTE_tick.title = '  Setpoint VTE'
-
-temp_VTE_tick = Par('bool', False)
-temp_VTE_tick.title = '  Read VTE'
-
-temp_VTI_tick = Par('bool', False)
-temp_VTI_tick.title = '  Read VTI'
-
-temp_LSC_tick = Par('bool', False)
-temp_LSC_tick.title = '  Read LS C'
-
-temp_LSD_tick = Par('bool', False)
-temp_LSD_tick.title = '  Read LS D'
-
-temp_setH1_tick = Par('bool', False)
-temp_setH1_tick.title = '  Set H1'
-temp_setH2_tick = Par('bool', False)
-temp_setH2_tick.title = '  Set H2'
-temp_setH3_tick = Par('bool', False)
-temp_setH3_tick.title = '  Set H3'
-temp_setH4_tick = Par('bool', False)
-temp_setH4_tick.title = '  Set H4'
-temp_setH5_tick = Par('bool', False)
-temp_setH5_tick.title = '  Set H5'
-temp_setH6_tick = Par('bool', False)
-temp_setH6_tick.title = '  Set H6'
-
-temp_H1_tick = Par('bool', False)
-temp_H1_tick.title = '  Read H1'
-temp_H2_tick = Par('bool', False)
-temp_H2_tick.title = '  Read H2'
-temp_H3_tick = Par('bool', False)
-temp_H3_tick.title = '  Read H3'
-temp_H4_tick = Par('bool', False)
-temp_H4_tick.title = '  Read H4'
-temp_H5_tick = Par('bool', False)
-temp_H5_tick.title = '  Read H5'
-temp_H6_tick = Par('bool', False)
-temp_H6_tick.title = '  Read H6'
-
-
-
-g0 = Group('Temp Settings:')
-g0.numColumns = 6
-g0.add(temp_setH1_tick, temp_setH2_tick, temp_setH3_tick,temp_setH4_tick,temp_setH5_tick,temp_setH6_tick,\
-       temp_H1_tick, temp_H2_tick, temp_H3_tick, temp_H4_tick, temp_H5_tick, temp_H6_tick,\
-       temp_setVTE_tick, temp_VTE_tick, temp_VTI_tick, temp_LSC_tick, temp_LSD_tick)
-
+g0.numColumns = 5
+g0.add(temp_CellHeater_tick, temp_Huber_tick, temp_Lakeshore_tick)
 
 ReactorPower_tick = Par('bool', False)
 ReactorPower_tick.title = '  Reactor Power'
@@ -205,8 +151,6 @@ TransDeadTime_tick.title = '  Trans DeadTime'
 g0 = Group('DeadTime:')
 g0.numColumns = 3
 g0.add(MainDeadTime_tick, TransDeadTime_tick)
-
-
 
 export_tick = Par('bool', True)
 export_tick.title = 'export'
@@ -254,8 +198,7 @@ def __run_script__(fns):
             data = []
             header.append('filname')
             data.append(filename)
-            
-            
+ 
             
             if SampleName_tick.value:                
                 ds.__iDictionary__.addEntry('SampleName', 'entry1/sample/name')
@@ -472,93 +415,150 @@ def __run_script__(fns):
                     data.append(str(ds.ss1ho[0]))
                 except:
                     data.append(str(ds.ss1ho))
-                header.append('ss1ho')
-
-g0.add(temp_setH1_tick, temp_setH2_tick, temp_setH3_tick,temp_setH4_tick,temp_setH5_tick,temp_setH6_tick,\
-       temp_H1_tick, temp_H2_tick, temp_H3_tick, temp_H4_tick, temp_H5_tick, temp_H6_tick,\
-       temp_setVTE_tick, temp_VTE_tick, temp_VTI_tick, temp_LSC_tick, temp_LSD_tick)
+                header.append('ss1ho')            
             
-            
-            if temp_setH1_tick.value:                
-                ds.__iDictionary__.addEntry('setH1', 'entry1/sample/tc1/sensor/sensorValueB')
-                #print 'ds.ss1ho', str(ds.ss1ho[0])
+            if temp_CellHeater_tick.value:                
+                #print 'ds.ss1ho', str(ds.setH6[0])
                 try:
-                    sensorB0 = float(ds.sensorB[0])-273.15
-                    data.append(str(sensorB0))
-                except:
-                    data.append(str(ds.sensorB))
-                header.append('sensorB')
-                
-                
-                
-                
-                
-            if temp_LSC_tick.value:                
-                ds.__iDictionary__.addEntry('sensor LS C', 'entry1/sample/tc3/sensor/sensorValueC')
-                #print 'ds.ss1ho', str(ds.ss1ho[0])
-                try:
-                    sensorB0 = float(ds.sensorB[0])-273.15
-                    data.append(str(sensorB0))
-                except:
-                    data.append(str(ds.sensorB))
-                header.append('sensorB')
+                    ds.__iDictionary__.addEntry('setH1', 'entry1/sample/tc1/Loop1/setpoint01')
+                    ds.__iDictionary__.addEntry('setH2', 'entry1/sample/tc1/Loop1/setpoint02')
+                    ds.__iDictionary__.addEntry('setH3', 'entry1/sample/tc1/Loop1/setpoint03')
+                    ds.__iDictionary__.addEntry('setH4', 'entry1/sample/tc1/Loop1/setpoint04')
+                    ds.__iDictionary__.addEntry('setH5', 'entry1/sample/tc1/Loop1/setpoint05')
+                    ds.__iDictionary__.addEntry('setH6', 'entry1/sample/tc1/Loop1/setpoint06')
+                    ds.__iDictionary__.addEntry('H1', 'entry1/sample/tc1/Analog/Input01')
+                    ds.__iDictionary__.addEntry('H2', 'entry1/sample/tc1/Analog/Input02')
+                    ds.__iDictionary__.addEntry('H3', 'entry1/sample/tc1/Analog/Input03')
+                    ds.__iDictionary__.addEntry('H4', 'entry1/sample/tc1/Analog/Input04')
+                    ds.__iDictionary__.addEntry('H5', 'entry1/sample/tc1/Analog/Input05')
+                    ds.__iDictionary__.addEntry('H6', 'entry1/sample/tc1/Analog/Input06')
                      
-            '''   
-            if tempSetpoint_tick.value:                
-                ds.__iDictionary__.addEntry('temp_setpoint', 'entry1/sample/tc1/Loop1/setpoint')
-                #print 'ds.ss1ho', str(ds.ss1ho[0])
-                try:
-                    data.append(str(ds.temp_setpoint[0]))
+                    try:
+                        setH1 = float(ds.setH1[0])
+                        data.append(str(setH1))
+                        setH2 = float(ds.setH2[0])
+                        data.append(str(setH2))
+                        setH3 = float(ds.setH3[0])
+                        data.append(str(setH3))
+                        setH4 = float(ds.setH4[0])
+                        data.append(str(setH4))
+                        setH5 = float(ds.setH5[0])
+                        data.append(str(setH5))
+                        setH6 = float(ds.setH6[0])
+                        data.append(str(setH6))
+                        
+                        H1 = float(ds.H1[0])
+                        data.append(str(H1))
+                        H2 = float(ds.H2[0])
+                        data.append(str(H2))
+                        H3 = float(ds.H3[0])
+                        data.append(str(H3))
+                        H4 = float(ds.H4[0])
+                        data.append(str(H4))
+                        H5 = float(ds.H5[0])
+                        data.append(str(H5))
+                        H6 = float(ds.H6[0])
+                        data.append(str(H6))
+                    except:
+                        data.append(str(ds.setH1))
+                        data.append(str(ds.setH2))
+                        data.append(str(ds.setH3))
+                        data.append(str(ds.setH4))
+                        data.append(str(ds.setH5))
+                        data.append(str(ds.setH6))
+                        
+                        data.append(str(ds.H1))
+                        data.append(str(ds.H2))
+                        data.append(str(ds.H3))
+                        data.append(str(ds.H4))
+                        data.append(str(ds.H5))
+                        data.append(str(ds.H6))
+                        
+                    header.append('setH1')
+                    header.append('setH2')
+                    header.append('setH3')
+                    header.append('setH4')
+                    header.append('setH5')
+                    header.append('setH6')
+                    
+                    header.append('H1')
+                    header.append('H2')
+                    header.append('H3')
+                    header.append('H4')
+                    header.append('H5')
+                    header.append('H6')
+                    
                 except:
-                    data.append(str(ds.temp_setpoint))
-                header.append('temp_setpoint')
-                
-            if tempSensorA_tick.value:                
-                ds.__iDictionary__.addEntry('sensorA', 'entry1/sample/tc2/sensor/sensorValueA')
+                    print "No Cell heater info found"
+                    
+                    
+            if temp_Huber_tick.value:                            
                 try:
-                    sensorA0 = float(ds.sensorA[0])-273.15
-                    data.append(str(sensorA0))
+                    ds.__iDictionary__.addEntry('setVTE', 'entry1/sample/tc2/Loop1/vSP')
+                    ds.__iDictionary__.addEntry('VTE', 'entry1/sample/tc2/Loop1/vTE')
+                    ds.__iDictionary__.addEntry('VTI', 'entry1/sample/tc2/Loop1/vTI')
+                    
+                    try:
+                        setVTE = float(ds.setVTE[0])
+                        data.append(str(setVTE))
+                        VTE = float(ds.VTE[0])
+                        data.append(str(VTE))
+                        VTI = float(ds.VTI[0])
+                        data.append(str(VTI))
+                    except:
+                        print 'ds.setVTE', str(ds.setVTE)
+                        data.append(str(ds.setVTE))
+                        data.append(str(ds.VTE))
+                        data.append(str(ds.VTI))
+                    header.append('setVTE')
+                    header.append('VTE')
+                    header.append('VTI')
                 except:
-                    data.append(str(ds.sensorA[0]))
-                header.append('sensorA')
-                
-            if tempSensorA_tick.value:                
-                ds.__iDictionary__.addEntry('sensorB', 'entry1/sample/tc2/sensor/sensorValueB')
-                #print 'ds.ss1ho', str(ds.ss1ho[0])
-                try:
-                    sensorB0 = float(ds.sensorB[0])-273.15
-                    data.append(str(sensorB0))
+                    print "No Huber bath info found"
+                    
+            if temp_Lakeshore_tick.value:                             
+                try:                
+                    ds.__iDictionary__.addEntry('LSC', 'entry1/sample/tc3/sensor/sensorValueC')
+                    ds.__iDictionary__.addEntry('LSD', 'entry1/sample/tc3/sensor/sensorValueD')
+                    try:
+                        print 'ds.LSC', float(ds.LSC[0])
+                        LSC = float(ds.LSC[0]) - -273.15
+                        data.append(str(LSC))
+                        LSD = float(ds.LSD[0]) - 273.15
+                        data.append(str(LSD))
+                    except:
+                        print 'ds.LSC[0]', str(ds.LSC[0])
+                        LSC = float(ds.LSC) - -273.15
+                        data.append(str(LSC))
+                        LSD = float(ds.LSD) - 273.15
+                        data.append(str(LSD))
+                    header.append('LS-C')
+                    header.append('LS-D')
+
                 except:
-                    data.append(str(ds.sensorB))
-                header.append('sensorB')
-            '''
+                    print "No Lakeshore info found"
+            
             
             if ReactorPower_tick.value:                
                 ds.__iDictionary__.addEntry('ReactorPower', 'entry1/instrument/source/power')
-                #print 'ds.ss1ho', str(ds.ss1ho[0])
                 try:
                     data.append(str(ds.ReactorPower[0]))
                 except:
                     data.append(str(ds.ReactorPower))
-                header.append('ReactorPower')
+                header.append('ReactorPower')              
                 
-                
-            if tempSetpoint_tick.value:                
+            if CNSout_tick.value:                
                 ds.__iDictionary__.addEntry('CNS_out', 'entry1/instrument/source/cns_out')
-                #print 'ds.ss1ho', str(ds.ss1ho[0])
                 try:
                     data.append(str(ds.CNS_out[0]))
                 except:
                     data.append(str(ds.CNS_out))
-                header.append('CNS_out')
-            
-            
-                
+                header.append('CNS_out')          
                 
             if BeamMonitor_tick.value:                
                 ds.__iDictionary__.addEntry('BM_Counts', 'entry1/monitor/bm1_counts')
                 ds.__iDictionary__.addEntry('BM_Time', 'entry1/monitor/bm1_time')
-                #print 'ds.ss1ho', str(ds.ss1ho[0])
+
                 try:
                     data.append(str(ds.BM_Counts[0]))
                     data.append(str(ds.BM_Time[0]))
