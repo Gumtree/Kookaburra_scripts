@@ -81,12 +81,21 @@ def update_axis_name():
         
 G1.add(device_name, scan_start, scan_stop, sc_enabled, sc_count, sw_enabled, sw_width, scan_mode, scan_preset, act_scan_device)
 
-G2 = Group('Fitting')
-data_name = Par('string', 'total_counts', \
-               options = ['total_counts', 'bm1_counts', 'bm2_counts'])
+G2 = Group('Plot 1')
+data_name = Par('string', 'first_5_tubes', \
+               options = ['first_5_tubes',
+                          'tube_9',
+                          'tube_10',
+                          'total_counts', 
+                          'bm1_counts', 
+                          'bm2_counts'], 
+                command = 'change_data_name()')
+show_individuals = Par('bool', True)
+show_individuals.enabled = True
 normalise = Par('bool', True)
 axis_name = Par('string', '')
 axis_name.enabled = True
+fix_axis = Par('bool', False)
 auto_fit = Par('bool', False)
 fit_min = Par('float', 'NaN')
 fit_max = Par('float', 'NaN')
@@ -95,7 +104,7 @@ FWHM = Par('float', 'NaN')
 fact = Act('fit_curve()', 'Fit Again')
 #offset_done = Par('bool', False)
 #act3 = Act('offset_s2()', 'Set Device Zero Offset')
-G2.add(data_name, normalise, axis_name, auto_fit, fit_min, fit_max, peak_pos, FWHM, fact)
+G2.add(data_name, show_individuals, normalise, axis_name, fix_axis, auto_fit, fit_min, fit_max, peak_pos, FWHM, fact)
 
 G3 = Group('Plot 2')
 allow_duplication = Par('bool', False)
@@ -112,6 +121,13 @@ act_remove_all = Act('remove_all_curves()', 'Remove All Curves')
 G3.add(allow_duplication, act2, to_remove, act3, plot2_fit_min, plot2_fit_max, 
        plot2_act1, plot2_peak_pos, plot2_FWHM, act_reset, act_remove_all)
 
+def change_data_name():
+    dn = str(data_name.value)
+    if dn == 'first_5_tubes':
+        show_individuals.enabled = True
+    else:
+        show_individuals.enabled = False
+    
 def scan(dname, start, stop, np, mode, preset):
     device_name.value = dname
     scan_start.value = start
@@ -168,15 +184,55 @@ def __run_script__(fns):
 #    __std_run_script__(fns)
     __std_run_script__(fns)
 
-def load_experiment_data():
-    basename = sicsext.getBaseFilename()
-    fullname = str(System.getProperty('sics.data.path') + '/' + basename)
+def load_experiment_data(fullname = None):
+    if fullname == None:
+        basename = sicsext.getBaseFilename()
+        fullname = str(System.getProperty('sics.data.path') + '/' + basename)
     df.datasets.clear()
     ds = df[fullname]
     dname = str(data_name.value)
-    data = SimpleData(ds[dname])
+    if dname == 'first_5_tubes':
+        if ds.ndim == 4:
+            data = ds[:,:,:,0:5].sum(0)
+        elif ds.ndim == 3:
+            data = ds[:,:,0:5].sum(0)
+        elif ds.ndim == 2:
+            data = ds[:,0:5].sum(0)
+        else:
+            raise Exception('invalid data dimension: {}'.format(ds.ndim))
+    elif dname == 'tube_9':
+        if ds.ndim == 4:
+            data = ds[:,:,:,9].sum(0)
+        elif ds.ndim == 3:
+            data = ds[:,:,9].sum(0)
+        elif ds.ndim == 2:
+            data = ds[:,9].sum(0)
+        else:
+            raise Exception('invalid data dimension: {}'.format(ds.ndim))
+    elif dname == 'tube_10':
+        if ds.ndim == 4:
+            data = ds[:,:,:,10].sum(0)
+        elif ds.ndim == 3:
+            data = ds[:,:,10].sum(0)
+        elif ds.ndim == 2:
+            data = ds[:,10].sum(0)
+        else:
+            raise Exception('invalid data dimension: {}'.format(ds.ndim))
+    else:
+        data = SimpleData(ds[dname])
 #    data = ds[str(data_name.value)]
-    axis = SimpleData(ds[str(axis_name.value)])
+    if axis_name.value.strip() == '':
+        axis = ds.axes[0]
+        axis_name.value = axis.name
+#        axis = ds.get_metadata(str(axis_name.value))
+    else:
+        if fix_axis.value:
+            axis = SimpleData(ds[str(axis_name.value)])
+        else:
+            axis = ds.axes[0]
+            axis_name.value = axis.name
+    if not hasattr(axis, '__len__'):
+        axis = SimpleData([axis], title = (axis_name.value))
     if data.size > axis.size:
         data = data[:axis.size]
     if normalise.value :
@@ -200,6 +256,22 @@ def load_experiment_data():
     fit_min.value = axis.min()
     fit_max.value = axis.max()
     Plot1.set_dataset(ds2)
+    if dname == 'first_5_tubes':
+        for i in xrange(5):
+            if ds.ndim == 4:
+                di = ds[:,:,:,i].sum(0)
+                if normalise.value :
+                    tname = 'detector_time'
+                    norm = ds[tname]
+                    if norm != None and hasattr(norm, '__len__'):
+                        avg = norm.sum() / len(norm)
+                        niter = norm.item_iter()
+                        if niter.next() <= 0:
+                            niter.set_curr(1)
+                        di = di / norm * avg
+                di2 = Dataset(di, axes=[axis])
+                di2.title = 'tube {}'.format(i)
+                Plot1.add_dataset(di2)
     Plot1.x_label = axis_name.value
     Plot1.y_label = str(data_name.value)
     Plot1.title = str(data_name.value) + ' vs ' + axis_name.value
@@ -222,7 +294,36 @@ def import_to_plot2():
                         to_remove.options = rlist
                         break
         dname = str(data_name.value)
-        data = SimpleData(ds[dname])
+        if dname == 'first_5_tubes':
+            if ds.ndim == 4:
+                data = ds[:,:,:,0:5].sum(0)
+            elif ds.ndim == 3:
+                data = ds[:,:,0:5].sum(0)
+            elif ds.ndim == 2:
+                data = ds[:,0:5].sum(0)
+            else:
+                raise Exception('invalid data dimension: {}'.format(ds.ndim))
+        elif dname == 'tube_9':
+            if ds.ndim == 4:
+                data = ds[:,:,:,9].sum(0)
+            elif ds.ndim == 3:
+                data = ds[:,:,9].sum(0)
+            elif ds.ndim == 2:
+                data = ds[:,9].sum(0)
+            else:
+                raise Exception('invalid data dimension: {}'.format(ds.ndim))
+        elif dname == 'tube_10':
+            if ds.ndim == 4:
+                data = ds[:,:,:,10].sum(0)
+            elif ds.ndim == 3:
+                data = ds[:,:,10].sum(0)
+            elif ds.ndim == 2:
+                data = ds[:,10].sum(0)
+            else:
+                raise Exception('invalid data dimension: {}'.format(ds.ndim))
+        else:
+            data = SimpleData(ds[dname])
+    #    data = ds[str(data_name.value)]
         if normalise.value :
             if dname == 'bm1_counts':
                 tname = 'bm1_time'
@@ -368,51 +469,52 @@ def __std_run_script__(fns):
     else :
         for fn in fns:
             # load dataset with each file name
-            ds = Plot1.ds
+#            ds = Plot1.ds
 #            if ds != None and len(ds) > 0:
 #                if ds[0].location == fn:
 #                    return
             df.datasets.clear()
-            ds = df[fn]
-            axis_name.value = ds.axes[0].name
-            dname = str(data_name.value)
-            if dname == 'total_counts':
-#                data = ds.sum(0)
-                data = ds[dname]
-            else:
-                data = ds[dname]
-            if normalise.value :
-                if dname == 'bm1_counts':
-                    tname = 'bm1_time'
-                elif dname == 'bm2_counts':
-                    tname = 'bm2_time'
-                else:
-                    tname = 'detector_time'
-                norm = ds[tname]
-                if norm != None and hasattr(norm, '__len__'):
-                    avg = norm.sum() / len(norm)
-                    niter = norm.item_iter()
-                    if niter.next() <= 0:
-                        niter.set_curr(1)
-                    data = data / norm * avg
-        
-            axis = ds.get_metadata(str(axis_name.value))
-            if not hasattr(axis, '__len__'):
-                axis = SimpleData([axis], title = (axis_name.value))
-            ds2 = Dataset(data, axes=[axis])
-            ds2.title = ds.id
-            ds2.location = fn
-            fit_min.value = axis.min()
-            fit_max.value = axis.max()
-            Plot1.set_dataset(ds2)
-            Plot1.x_label = axis_name.value
-            Plot1.y_label = dname
-            Plot1.title = dname + ' vs ' + axis_name.value
-            Plot1.pv.getPlot().setMarkerEnabled(True)
-            peak_pos.value = float('NaN')
-            FWHM.value = float('NaN')
-            if auto_fit.value :
-                fit_curve()
+            load_experiment_data(fn)
+#            ds = df[fn]
+#            axis_name.value = ds.axes[0].name
+#            dname = str(data_name.value)
+#            if dname == 'total_counts':
+##                data = ds.sum(0)
+#                data = ds[dname]
+#            else:
+#                data = ds[dname]
+#            if normalise.value :
+#                if dname == 'bm1_counts':
+#                    tname = 'bm1_time'
+#                elif dname == 'bm2_counts':
+#                    tname = 'bm2_time'
+#                else:
+#                    tname = 'detector_time'
+#                norm = ds[tname]
+#                if norm != None and hasattr(norm, '__len__'):
+#                    avg = norm.sum() / len(norm)
+#                    niter = norm.item_iter()
+#                    if niter.next() <= 0:
+#                        niter.set_curr(1)
+#                    data = data / norm * avg
+#        
+#            axis = ds.get_metadata(str(axis_name.value))
+#            if not hasattr(axis, '__len__'):
+#                axis = SimpleData([axis], title = (axis_name.value))
+#            ds2 = Dataset(data, axes=[axis])
+#            ds2.title = ds.id
+#            ds2.location = fn
+#            fit_min.value = axis.min()
+#            fit_max.value = axis.max()
+#            Plot1.set_dataset(ds2)
+#            Plot1.x_label = axis_name.value
+#            Plot1.y_label = dname
+#            Plot1.title = dname + ' vs ' + axis_name.value
+#            Plot1.pv.getPlot().setMarkerEnabled(True)
+#            peak_pos.value = float('NaN')
+#            FWHM.value = float('NaN')
+#            if auto_fit.value :
+#                fit_curve()
             
 def auto_run():
     pass
