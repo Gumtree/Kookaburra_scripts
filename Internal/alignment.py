@@ -256,7 +256,7 @@ def load_experiment_data(fullname = None):
     fit_min.value = axis.min()
     fit_max.value = axis.max()
     Plot1.set_dataset(ds2)
-    if dname == 'first_5_tubes':
+    if dname == 'first_5_tubes' and show_individuals.value:
         for i in xrange(5):
             if ds.ndim == 4:
                 di = ds[:,:,:,i].sum(0)

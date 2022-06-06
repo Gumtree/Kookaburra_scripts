@@ -1124,8 +1124,10 @@ class ReductionDataset:
         self.Bex           = list(ds['entry1/instrument/crystal/bex'])
         self.MonCts        = list(ds['entry1/monitor/bm1_counts'])
         self.MonCountTimes = list(ds['entry1/monitor/time'])      
-        self.ScanVariablename  = str(ds['entry1/instrument/crystal/scan_variable'])
-        self.ScanVariable = list(ds['entry1/instrument/crystal/' + self.ScanVariablename])        
+        #self.ScanVariablename  = str(ds['entry1/instrument/crystal/scan_variable'])
+        self.ScanVariablename  = 'm2om'
+        #self.ScanVariable = list(ds['entry1/instrument/crystal/' + self.ScanVariablename])
+        self.ScanVariable = list(ds['entry1/instrument/crystal/m2om'])        
         
         self.Angle = copy(self.ScanVariable)
         
@@ -1149,6 +1151,8 @@ class ReductionDataset:
         self.TimeStamp     = list(ds['entry1/time_stamp'])
         self.start_time    = str(ds['entry1/start_time'])
         
+
+        self.ScanVariable  = 'm2om'
         
         if TemperatureVTE_setpoint.value:   
             self.TempvTE_sp       = float(ds['entry1/sample/tc2/Loop1/setpoint'][0])
