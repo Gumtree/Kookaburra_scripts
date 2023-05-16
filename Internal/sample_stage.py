@@ -103,6 +103,7 @@ class KKB06cells_som(AbstractSampleStage):
                         ('6', 513.2),                      
                         ]
 
+    
 class KKB05cells_som(AbstractSampleStage):
     # updated 12.2.2022 29mm aperture aligned by eye
     name = "KKB 5 Cells som"
@@ -145,7 +146,17 @@ class KKB_Tom_pressurecell(AbstractSampleStage):
                         ('Cell out', 70)                     
                         ]
     
-'''    
+''' 
+
+class KKB06cells_som_MV(AbstractSampleStage):
+    ## 28.11.2018 LdC
+    name = "KKB 6 Cells Tumbler som 9mm below centre MV HL"
+    in_service = True
+    index_samz_pairs = [('2', 99.1),
+                        ('3', 195.5),
+                        ('4', 309.9),
+                        ('5', 415.3),                         
+                        ]   
 class KKB06cells_Shroud_Mark_plus9(AbstractSampleStage):
     ## 28.11.2018 LdC
     name = "KKB 6 Cells Tumbler Shroud MARK plus9"

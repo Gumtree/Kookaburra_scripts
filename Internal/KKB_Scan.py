@@ -1,6 +1,6 @@
 
 __script__.title = 'KKB Measurement Script'
-__script__.version = '2.1 2017-07-11 saved as KKB_scan'
+__script__.version = '4.0'
 
 from gumpy.commons import sics
 from org.gumtree.gumnix.sics.control import ServerStatus
@@ -16,7 +16,8 @@ from org.eclipse.swt.widgets import FileDialog
 from org.eclipse.swt import SWT
 from org.eclipse.swt.widgets import Display
 from java.io import File
-import time
+from gumpy.nexus.fitting import Fitting, GAUSSIAN_FITTING
+import math
 
 from Internal import sample_stage
 
@@ -87,6 +88,14 @@ steps_templates_list.append([
     'logscale',
     [33, 6.0e-5, 1000, 1200],
     [34, 20.0, 1000, 1200]])
+
+steps_templates_list.append([
+    'Si111: Logarithmic Scan (low q few features)',
+    'ba',
+    'logscale',
+    [33, 6.0e-5, 1000, 1200],
+    [10, 10.0, 1000, 1200],
+    [29, 20.0, 1000, 1200]])
 
 steps_templates_list.append([
     'Si111: Logarithmic Scan (fine features)',
@@ -280,7 +289,128 @@ g0.add(pss_ss1vg, pss_ss1vo, pss_ss1hg, pss_ss1ho)
 # SLIT 1 END #######################################################################
 
 
+# SAMPLE ENVIRONMENT BLOCK #########################################################
+gse = Group('Sample Environment')
+gse.numColumns = 10
 
+se_enabled1 = Par('bool', False, command = 'toggle_se(1)')
+se_enabled1.title = 'Controller 1'
+se_enabled1.colspan = 1
+
+se_ctr1 = Par('string', '', options = [])
+se_ctr1.title = 'name'
+se_ctr1.colspan = 2
+se_ctr1.enabled = False
+
+se_pos1 = Par('float', 0.)
+se_pos1.title = 'Values'
+se_pos1.colspan = 5
+se_pos1.enabled = False
+
+se_cmd1 = Par('string', 'drive', options = ['drive', 'run'])
+se_cmd1.title = 'Command'
+se_cmd1.colspan = 1
+se_cmd1.enabled = False
+
+se_wait1 = Par('int', 0)
+se_wait1.title = 'Wait'
+se_wait1.colspan = 1
+se_wait1.enabled = False
+
+se_enabled2 = Par('bool', False, command = 'toggle_se(2)')
+se_enabled2.title = 'Controller 2'
+se_enabled2.colspan = 1
+
+se_ctr2 = Par('string', '', options = [])
+se_ctr2.title = 'name'
+se_ctr2.colspan = 2
+se_ctr2.enabled = False
+
+se_pos2 = Par('float', 0.)
+se_pos2 .title = 'Values'
+se_pos2.colspan = 5
+se_pos2.enabled = False
+
+se_cmd2 = Par('string', 'drive', options = ['drive', 'run'])
+se_cmd2.title = 'Command'
+se_cmd2.colspan = 1
+se_cmd2.enabled = False
+
+se_wait2 = Par('int', 0)
+se_wait2 .title = 'Wait'
+se_wait2.colspan = 1
+se_wait2.enabled = False
+
+se_enabled3 = Par('bool', False, command = 'toggle_se(3)')
+se_enabled3.title = 'Controller 3'
+se_enabled3.colspan = 1
+
+se_ctr3 = Par('string', '', options = [])
+se_ctr3.title = 'name'
+se_ctr3.colspan = 2
+se_ctr3.enabled = False
+
+se_pos3 = Par('float', 0.)
+se_pos3 .title = 'Values'
+se_pos3.colspan = 5
+se_pos3.enabled = False
+
+se_cmd3 = Par('string', 'drive', options = ['drive', 'run'])
+se_cmd3.title = 'Command'
+se_cmd3.colspan = 1
+se_cmd3.enabled = False
+
+se_wait3 = Par('int', 0)
+se_wait3 .title = 'Wait'
+se_wait3.colspan = 1
+se_wait3.enabled = False
+
+se_other = Par('bool', False, command = 'toggle_se_other()')
+se_other.title = 'Other'
+se_other.colspan = 1
+
+se_other_cmd = Par('string', '')
+se_other_cmd.title = 'command'
+se_other_cmd.colspan = 9
+se_other_cmd.enabled = False
+
+gse.add(se_enabled1, se_ctr1, se_pos1, se_cmd1, se_wait1,
+        se_enabled2, se_ctr2, se_pos2, se_cmd2, se_wait2,
+        se_enabled3, se_ctr3, se_pos3, se_cmd3, se_wait3, 
+        se_other, se_other_cmd)
+
+devices = sicsext.getDrivables()
+se_ctr1.options = devices
+se_ctr2.options = devices
+se_ctr3.options = devices
+
+def toggle_se_other():
+    se_other_cmd.enabled = se_other.value
+        
+def toggle_se(id):
+    id = int(id)
+    if id == 1:
+        flag = se_enabled1.value
+        se_ctr1.enabled = flag
+        se_pos1.enabled = flag
+        se_cmd1.enabled = flag
+        se_wait1.enabled = flag
+    elif id == 2:
+        flag = se_enabled2.value
+        se_ctr2.enabled = flag
+        se_pos2.enabled = flag
+        se_cmd2.enabled = flag
+        se_wait2.enabled = flag
+    elif id == 3:
+        flag = se_enabled3.value
+        se_ctr3.enabled = flag
+        se_pos3.enabled = flag
+        se_cmd3.enabled = flag
+        se_wait3.enabled = flag
+    else:
+        raise 'illegal index for sample environment'
+    
+# SAMPLE ENVIRONMENT BLOCK END #####################################################
 
 ## Scan parameters ##########################################################################################################
 
@@ -581,7 +711,7 @@ cnfg_lookup = dict()
 cnfg_options = Par('string', '', options=[''], command="applyConfiguration()")
 cnfg_options.title = 'Read'
 
-start_scan = Act('startScan(ConfigurationModel())', '#############   Run Single Scan   #############')
+start_scan = Act('runSingleScan()', '#############   Run Single Scan   #############')
 cnfg_run_btn = Act('runConfigurations()', '#############   Run Multiple Scans   #############')
 
 g0 = Group('Execute Scans')
@@ -656,14 +786,14 @@ def loadConfigurations():
     cnfg_lookup.clear()
     cnfg_lookup.update(finalDict)
     
-    cnfg_options.value = finalNames[0] if finalNames else ''
     cnfg_options.options = finalNames
+    cnfg_options.value = finalNames[0] if finalNames else ''
 #    time.sleep(0.5)
     
             
 def applyConfiguration():
     file = str(cnfg_options.value)
-    if not file:
+    if file is None or file == 'None' or file.strip() == '':
         return
 
     fh = open(cnfg_lookup[file], 'r')
@@ -687,7 +817,8 @@ def applyConfiguration():
     finally:
         fh.close()
 
-def runConfigurations():    
+def runConfigurations():
+    checkInstrumentReady()    
     for file in cnfg_options.options:
         fh = open(cnfg_lookup[file], 'r')
         try:
@@ -823,7 +954,88 @@ g0.numColumns = 2
 g0.add(pss_ss2vg, pss_ss2vo, pss_ss2hg, pss_ss2ho)
 ################################# SLIT 2 END ##########################################################
 
+################################# CURVE FITTING START ##########################################################
 
+g_fit = Group('Fitting')
+g_fit.numColumns = 2
+#data_name = Par('string', 'total_counts', \
+#               options = ['total_counts', 'bm1_counts', 'bm2_counts'])
+#normalise = Par('bool', True)
+#axis_name = Par('string', '')
+#axis_name.enabled = True
+#auto_fit = Par('bool', False)
+#fit_min = Par('float', 'NaN')
+#fit_min.title = 'min x'
+#fit_max = Par('float', 'NaN')
+#fit_max.title = 'max x'
+peak_pos = Par('float', 'NaN')
+peak_pos.title = 'fitting peak position'
+FWHM = Par('float', 'NaN')
+FWHM.title = 'fitting FWHM'
+fact = Act('fit_curve()', 'Fit Again')
+fact.colspan = 2
+#offset_done = Par('bool', False)
+#act3 = Act('offset_s2()', 'Set Device Zero Offset')
+g_fit.add(peak_pos, FWHM, fact)
+
+def fit_curve():
+    global Plot1
+    ds = Plot1.ds
+    if len(ds) == 0:
+        log('Error: no curve to fit in Plot1.\n')
+        return
+    for d in ds:
+        if d.title == 'fitting':
+            Plot1.remove_dataset(d)
+    d0 = ds[0]
+    fitting = Fitting(GAUSSIAN_FITTING)
+    try:
+        fitting.set_histogram(d0)
+        fitting.fitter.setResolutionMultiple(50)
+        val = peak_pos.value
+        if val == val:
+            fitting.set_param('mean', val)
+        val = FWHM.value
+        if val == val:
+            fitting.set_param('sigma', math.fabs(val / 2.35482))
+        res = fitting.fit()
+        res.var[:] = 0
+        res.title = 'fitting'
+        Plot1.add_dataset(res)
+        Plot1.pv.getPlot().setCurveMarkerVisible(Plot1.__get_NXseries__(res), False)
+        mean = fitting.params['mean']
+        mean_err = fitting.errors['mean']
+        FWHM.value = 2.35482 * math.fabs(fitting.params['sigma'])
+        FWHM_err = 5.54518 * math.fabs(fitting.errors['sigma'])
+        log(' ')
+        log('POS_OF_PEAK = ' + str(mean) + ' +/- ' + str(mean_err))
+        log(' ')
+        log('FWHM = ' + str(FWHM.value) + ' +/- ' + str(FWHM_err))
+        log('Chi2 = ' + str(fitting.fitter.getQuality()))
+        peak_pos.value = fitting.mean
+#        print fitting.params
+    except:
+#        traceback.print_exc(file = sys.stdout)
+        log('can not fit\n')
+
+################################# CURVE FITTING END ##########################################################
+
+def waitUntilSicsIs(status, dt=0.2):
+    controller = sics.getSicsController()
+    timeout = 5
+    while True:
+        sics.handleInterrupt()
+        count = 0
+        while not controller.getServerStatus().equals(status) and count < timeout:
+            time.sleep(dt)
+            count += dt
+        
+        if controller.getServerStatus().equals(status):
+            break
+        else:
+            controller.refreshServerStatus()
+    sics.handleInterrupt()
+    
 def setStepTitles():
     if logscale_position.value:
         for stepInfoItem in stepInfo[1:]:
@@ -969,9 +1181,8 @@ def wait_for_idle():
         if time.time() - c_time > 5:
             serverStatus = sics.get_status()
             c_time = time.time()
-        
-def startScan(configModel):
-    
+
+def checkInstrumentReady():
     ''' check instrument ready '''
     
     all_ready = False
@@ -980,7 +1191,7 @@ def startScan(configModel):
     msg = None
     try:
         is_ready = sics.getValue('/instrument/status/ready').getStringData() == 'TRUE'
-        is_shielded = sics.getValue('/instrument/GreenPolyShield/greenpolyshield').getStringData().lower() == 'in'
+        is_shielded = sics.getValue('/instrument/GreenPolyShield/greenpolyshield').getStringData().lower() == '1'
         if not is_ready:
             if not is_shielded:
                 msg = 'The instrument is not ready and the green polyshield is not applied. ' \
@@ -1013,13 +1224,20 @@ def startScan(configModel):
         else:
             try:
                 is_ready = sics.getValue('/instrument/status/ready').getStringData() == 'TRUE'
-                is_shielded = sics.getValue('/instrument/GreenPolyShield/greenpolyshield').getStringData().lower() == 'in'
+                is_shielded = sics.getValue('/instrument/GreenPolyShield/greenpolyshield').getStringData().lower() == '1'
             except:
                 pass
             if not is_ready: 
                 slog('scan continued without instrument ready')
             if not is_shielded:
                 slog('scan continued without green polysheild')
+        
+def runSingleScan(): 
+    checkInstrumentReady()
+    startScan(ConfigurationModel())
+        
+def startScan(configModel):
+    
         
     ''' setup '''
     
@@ -1156,9 +1374,7 @@ def startScan(configModel):
     sics.execute(dc)
     
     time.sleep(5)
-    wait_for_idle()
-#    while not sics.get_status().equals(ServerStatus.EAGER_TO_EXECUTE):
-#        time.sleep(0.5)
+    waitUntilSicsIs(ServerStatus.EAGER_TO_EXECUTE)
     
     '''
     sics.execute('run ss1u %.2f' % ss1u)
@@ -1171,6 +1387,45 @@ def startScan(configModel):
     sics.execute('run ss2r %.2f' % ss2r)
     sics.execute('run ss2l %.2f' % ss2l)
     '''
+        
+    # drive sample environment devices
+    slog('check sample environment setup')
+    multiDev = {}
+    se_wait = 0
+    if configModel.se_enabled1:
+        slog('sample controller 1 is enabled')
+        if configModel.se_cmd1 == 'drive':
+            multiDev[configModel.se_ctr1] = configModel.se_pos1
+        elif configModel.se_cmd1 == 'run':
+            sics.run(configModel.se_ctr1, configModel.se_pos1)
+        if configModel.se_wait1 > se_wait:
+            se_wait = configModel.se_wait1
+    if configModel.se_enabled2:
+        slog('sample controller 2 is enabled')
+        if configModel.se_cmd2 == 'drive':
+            multiDev[configModel.se_ctr2] = configModel.se_pos2
+        elif configModel.se_cmd2 == 'run':
+            sics.run(configModel.se_ctr2, configModel.se_pos2)
+        if configModel.se_wait2 > se_wait:
+            se_wait = configModel.se_wait2
+    if configModel.se_enabled3:
+        slog('sample controller 3 is enabled')
+        if configModel.se_cmd3 == 'drive':
+            multiDev[configModel.se_ctr3] = configModel.se_pos3
+        elif configModel.se_cmd3 == 'run':
+            sics.run(configModel.se_ctr3, configModel.se_pos3)
+        if configModel.se_wait3 > se_wait:
+            se_wait = configModel.se_wait3
+    if len(multiDev) > 0:
+        slog('drive sample environment ' + str(multiDev))
+        sics.multiDrive(multiDev)
+    if se_wait > 0:
+        slog('wait for ' + str(se_wait) + ' seconds')
+        time.sleep(se_wait)
+    if configModel.se_other:
+        slog('other environment command is enabled')
+        text = configModel.se_other_cmd
+        exec text in globals(), locals()
     
     # load sample positions
     sample_stage_name = configModel.sample_stage
@@ -1186,7 +1441,7 @@ def startScan(configModel):
             raise 'Invalid stage name ' + str(sample_stage_name)
         samz_value = stage.get_samz(sample_positions)
         samz_list.append(samz_value)
-        print samz_list
+        #print samz_list
 
     for samz in samz_list:
     
@@ -1204,9 +1459,7 @@ def startScan(configModel):
             sics.execute('run samz %.2f' % samz)
             # sics.execute('prun samz 2' % samz) !!!
             time.sleep(1)
-            wait_for_idle()
-#            while not sics.get_status().equals(ServerStatus.EAGER_TO_EXECUTE):
-#                time.sleep(0.5)
+            waitUntilSicsIs(ServerStatus.EAGER_TO_EXECUTE)
 
         sics.execute('newfile HISTOGRAM_XYT')
         # sics.execute('autosave 60') # 60 seconds
@@ -1218,9 +1471,7 @@ def startScan(configModel):
             time.sleep(1)
             sics.execute('histmem start')
             time.sleep(5)
-            wait_for_idle()
-#            while not sics.get_status().equals(ServerStatus.EAGER_TO_EXECUTE):
-#                time.sleep(0.5)
+            waitUntilSicsIs(ServerStatus.EAGER_TO_EXECUTE)
             sics.execute('histmem stop')
         
         print 'frames:', len(scan['angles'])
@@ -1237,9 +1488,7 @@ def startScan(configModel):
             # sics.drive(scanVariable, float(angle))
             sics.execute('drive %s %.6f' % (scanVariable, angle))
             time.sleep(10)
-            wait_for_idle()
-#            while not sics.get_status().equals(ServerStatus.EAGER_TO_EXECUTE):
-#                time.sleep(0.5)
+            waitUntilSicsIs(ServerStatus.EAGER_TO_EXECUTE)
            
             print 'drive done'
             
@@ -1255,7 +1504,7 @@ def startScan(configModel):
                 sics.execute('histmem ba undermintime ba_maxdetcount')
 
                 print 'histmem start'
-                sics.execute('histmem start')
+                sics.execute('histmem start block')
                 
                 time0 = time.time()
                 while sicsController.getServerStatus().equals(ServerStatus.EAGER_TO_EXECUTE):
@@ -1263,12 +1512,10 @@ def startScan(configModel):
                         print 'WARNING: HM may not have started counting. Gumtree will save anyway.'
                         break 
                     else:
-                        time.sleep(0.5)
+                        time.sleep(0.1)
 
                 time0 = time.time()
-                wait_for_idle()
-#                while not sics.get_status().equals(ServerStatus.EAGER_TO_EXECUTE):
-#                    time.sleep(0.5)
+                waitUntilSicsIs(ServerStatus.EAGER_TO_EXECUTE)
                         
                 print 'time counted (estimate):', float(time.time() - time0)
                 
@@ -1282,7 +1529,7 @@ def startScan(configModel):
                         
                     time.sleep(5)
                     sics.execute('histmem start')
-                    time.sleep(5)
+                    time.sleep(10)
                     
                     if mode == 'count_roi':
                         print 'count_roi'
@@ -1290,7 +1537,6 @@ def startScan(configModel):
                         time.sleep(configModel.min_time)
                         
                         count_roi = 0
-                        t0 = time.time()
                         while not sicsController.getServerStatus().equals(ServerStatus.EAGER_TO_EXECUTE):
                             try:
                                 count_roi = int(sicsext.runCommand('hmm configure num_events_filled_to_count_roi'))
@@ -1306,16 +1552,11 @@ def startScan(configModel):
                                 pass
                                 
                             time.sleep(0.5)
-                            if time.time() - t0 > 5:
-                                serverStatus = sics.get_status()
-                                t0 = time.time()
                             
                         break
                     
                     else:
-                        wait_for_idle()
-#                        while not sics.get_status().equals(ServerStatus.EAGER_TO_EXECUTE):
-#                            time.sleep(0.5)
+                        waitUntilSicsIs(ServerStatus.EAGER_TO_EXECUTE)
             
                         valid = False
                         for i in xrange(10):
@@ -1369,6 +1610,9 @@ def startScan(configModel):
     
     
     sics.execute('histmem ba disable')
+    
+#    print 'fit the curve'
+#    fit_curve()
     
     print 'done'
     print
@@ -1622,7 +1866,6 @@ def btnPlot_clicked():
         
         data.title = 'Tubes ' + str(tids)
         
-        
         Plot1.set_dataset(data)
         Plot1.set_mouse_follower_precision(6, 2, 2)
         Plot1.title = basename + ' (combined):  ' + samplename
@@ -1648,7 +1891,8 @@ def btnPlot_clicked():
     peakangle = xMax
     q = convert2q(scanVariable, peakangle, ds.wavelength)
         
-    data.axes[0] = q[:]
+    data = Dataset(data, axes=[q[:]])
+#    data.axes[0] = q[:]
     Plot2.set_dataset(data)
     Plot2.set_mouse_follower_precision(6, 2, 2)
         
@@ -1667,6 +1911,11 @@ def btnPlot_clicked():
     if q[-1] > 1e-6 :
         Plot2.x_range = [1e-6, q[-1]]
     
+    # reset ftting parameter for new curve to be fit
+    #peak_pos.value = float('nan')
+    #FWHM.value = float('nan')
+
+    fit_curve()
         
 def convert2q(angles, reference, wavelength):
     if wavelength is list:
@@ -1742,6 +1991,27 @@ class ConfigurationModel:
         self.ss2hg = float(pss_ss2hg.value)
         self.ss2ho = float(pss_ss2ho.value)
         
+        self.se_enabled1 = bool(se_enabled1.value)
+        self.se_ctr1 = str(se_ctr1.value)
+        self.se_pos1 = float(se_pos1.value)
+        self.se_cmd1 = str(se_cmd1.value)
+        self.se_wait1 = int(se_wait1.value)
+
+        self.se_enabled2 = bool(se_enabled2.value)
+        self.se_ctr2 = str(se_ctr2.value)
+        self.se_pos2 = float(se_pos2.value)
+        self.se_cmd2 = str(se_cmd2.value)
+        self.se_wait2 = int(se_wait2.value)
+
+        self.se_enabled3 = bool(se_enabled3.value)
+        self.se_ctr3 = str(se_ctr3.value)
+        self.se_pos3 = float(se_pos3.value)
+        self.se_cmd3 = str(se_cmd3.value)
+        self.se_wait3 = int(se_wait3.value)
+        
+        self.se_other = bool(se_other.value)
+        self.se_other_cmd = str(se_other_cmd.value)
+        
         # load sample positions
         self.sample_stage = str(scan_sample_stage.value)
         self.sample_position = str(scan_sample_position.value)
@@ -1789,6 +2059,32 @@ class ConfigurationModel:
         pss_ss2vo.value = self.ss2vo
         pss_ss2hg.value = self.ss2hg
         pss_ss2ho.value = self.ss2ho
+        
+        se_enabled1.value = self.se_enabled1
+        se_ctr1.value = self.se_ctr1
+        se_pos1.value = self.se_pos1
+        se_cmd1.value = self.se_cmd1
+        se_wait1.value = self.se_wait1
+        toggle_se(1)
+
+        se_enabled2.value = self.se_enabled2 
+        se_ctr2.value = self.se_ctr2 
+        se_pos2.value = self.se_pos2
+        se_cmd2.value = self.se_cmd2
+        se_wait2.value = self.se_wait2 
+        toggle_se(2)
+
+        se_enabled3.value = self.se_enabled3 
+        se_ctr3.value = self.se_ctr3 
+        se_pos3.value = self.se_pos3
+        se_cmd3.value = self.se_cmd3 
+        se_wait3.value = self.se_wait3 
+        toggle_se(3)
+        
+        if hasattr(self, 'se_other') :
+            se_other.value = self.se_other
+            se_other_cmd.value = self.se_other_cmd
+        toggle_se_other()
         
         # load sample positions
         scan_sample_position.value = self.sample_position

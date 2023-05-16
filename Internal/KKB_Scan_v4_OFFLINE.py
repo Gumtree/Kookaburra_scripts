@@ -104,9 +104,6 @@ steps_templates_list.append([
     [33, 6.0e-5, 1000, 1200],
     [65, 10.0, 1000, 1200]])
 
-
-
-'''
 steps_templates_list.append([
     'Si111: Logarithmic Taiki Scan (15 points)',
     'ba',
@@ -114,7 +111,8 @@ steps_templates_list.append([
     [2, 6.0e-5, 1000, 60],
     [1, 10000, 1000, 60],
     [10, 25, 1000, 60]])
-    
+
+'''
 steps_templates_list.append([
     'Si111: Kinetic Scan 4 points',
     'time',
@@ -643,6 +641,8 @@ def runTimeEstimation():
                 total += t1[i]
             else:
                 total += time
+            print 'time for step {} is {}, total time becomes {}'.format(
+                                i, time, total)
                 
             #print ("angle: " + str(a1[i]) 
             #        + " expected counts: " + str(c1[i]) 
@@ -651,6 +651,7 @@ def runTimeEstimation():
             #        + " total:" + str(total))
         except ValueError as e:
             if e.message == "OutOfRange":
+                print 'out of range detected for step {}'.format(i)
                 total += t1[i] # add max time
             else:
                 raise

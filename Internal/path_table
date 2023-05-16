@@ -32,6 +32,9 @@ sample_description = $entry/sample/description
 sample_thickness = $entry/sample/thickness
 samz = $entry/sample/samz
 samx = $entry/sample/samx
+som = $entry/sample/som
+presam_slitrot = $entry/sample/presam_slitrot
+ss1om = $entry/sample/presam_slitrot
 apsel = $entry/instrument/slits/apsel
 run_number = $entry/data/run_number
 

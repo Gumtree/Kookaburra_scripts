@@ -181,6 +181,7 @@ user_email.title = 'EMail'
 
 g0 = Group('User Details')
 g0.numColumns = 2
+g0.folded = True
 g0.add(user_name, user_email)
 
 # # Sample Details
@@ -196,6 +197,7 @@ sample_thickness.title = 'Thickness (mm)'
 
 
 g0 = Group('Sample  Details')
+g0.folded = True
 g0.numColumns = 2
 g0.add(sample_name, sample_thickness, sample_description)
 

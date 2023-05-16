@@ -3,7 +3,7 @@
 
 # Script control setup area
 # script info
-__script__.title = 'KKB Plot and Reduction 08.06.2022'
+__script__.title = 'KKB Plot and Reduction 29.12.2021'
 __script__.version = '2.0'
 
 
@@ -21,7 +21,7 @@ __script__.version = '2.0'
 # March 21 Use tube 6 as beam monitor - brute force
 # December 21: can now use either tube6 or bm as monitor
 # December 27: include new file with Tsas m2om0 I0 and Iwide in progress
-
+# Aiqian line 1295, 
 
 
 from math import sqrt, sin, exp
@@ -1124,10 +1124,10 @@ class ReductionDataset:
         self.Bex           = list(ds['entry1/instrument/crystal/bex'])
         self.MonCts        = list(ds['entry1/monitor/bm1_counts'])
         self.MonCountTimes = list(ds['entry1/monitor/time'])      
-        #self.ScanVariablename  = str(ds['entry1/instrument/crystal/scan_variable'])
-        self.ScanVariablename  = 'm2om'
-        #self.ScanVariable = list(ds['entry1/instrument/crystal/' + self.ScanVariablename])
-        self.ScanVariable = list(ds['entry1/instrument/crystal/m2om'])        
+        
+        self.ScanVariablename  = str('m2om')
+        #self.ScanVariablename  = str(ds['entry1/instrument/crystal/scan_variable']) # Aiqian 2022
+        self.ScanVariable = list(ds['entry1/instrument/crystal/' + self.ScanVariablename])     
         
         self.Angle = copy(self.ScanVariable)
         
@@ -1143,16 +1143,15 @@ class ReductionDataset:
         
         # read parameters from file
      
-        self.Wavelength    = float(ds['entry1/instrument/crystal/wavelength'])         
-        self.TransDeadTime = float(ds['entry1/instrument/detector/TransDeadTime'])
-        self.dOmega        = float(ds['entry1/instrument/crystal/dOmega'])      
+        #self.Wavelength    = float(ds['entry1/instrument/crystal/wavelength'])         
+        #self.TransDeadTime = float(ds['entry1/instrument/detector/TransDeadTime'])
+        #self.dOmega        = float(ds['entry1/instrument/crystal/dOmega'])  
+        self.Wavelength    = 4.74     # Aiqian    
+        self.TransDeadTime = 1.0-6
+        self.dOmega        = 2.0E-6          
         self.gDQv          = float(ds['entry1/instrument/crystal/gDQv'])
-        self.ScanVariable  = str(ds['entry1/instrument/crystal/scan_variable'])
         self.TimeStamp     = list(ds['entry1/time_stamp'])
         self.start_time    = str(ds['entry1/start_time'])
-        
-
-        self.ScanVariable  = 'm2om'
         
         if TemperatureVTE_setpoint.value:   
             self.TempvTE_sp       = float(ds['entry1/sample/tc2/Loop1/setpoint'][0])
@@ -1292,7 +1291,8 @@ class ReductionDataset:
             #print 'short wavelength'
         else:
             raise Exception('unsupported wavelength')
-            
+        
+        tid = 10 # Aiqian    
         # read in for transmission detector
         if ds.hmm.ndim == 4:   
             data[:] = ds.hmm[:, 0, :, tid].sum(0) # hmm

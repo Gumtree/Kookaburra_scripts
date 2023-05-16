@@ -279,9 +279,9 @@ def __run_script__(fns):
                 header.append('WaveLength')   
                 
             if ScanVariable_tick.value:                
-                ds.__iDictionary__.addEntry('ScanVariable', 'entry1/instrument/crystal/scan_variable')
+                ds.__iDictionary__.addEntry('WaveLength', 'entry1/instrument/crystal/wavelength')
                 #print 'ds.WaveLength', str(ds.WaveLength)
-                data.append(str(ds.ScanVariable))
+                data.append(str(ds.WaveLength))
                 header.append('ScanVariable')            
                 
             if pmchi_tick.value:                

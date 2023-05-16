@@ -1,4 +1,7 @@
 
+# vs5. Add empty cell scan template
+
+
 __script__.title = 'KKB Measurement Script'
 __script__.version = '4.0'
 
@@ -103,6 +106,14 @@ steps_templates_list.append([
     'logscale',
     [33, 6.0e-5, 1000, 1200],
     [65, 10.0, 1000, 1200]])
+
+steps_templates_list.append([
+    'Si111: Logarithmic Scan (empty cell)',
+    'ba',
+    'logscale',
+    [33, 6.0e-5, 1000, 1200],
+    [10, 10.0, 1000, 1200],
+    [15, 25.0, 1000, 1200]])
 
 
 

@@ -21,6 +21,7 @@ __script__.version = '2.0'
 # March 21 Use tube 6 as beam monitor - brute force
 # December 21: can now use either tube6 or bm as monitor
 # December 27: include new file with Tsas m2om0 I0 and Iwide in progress
+# 2022 Jan 22: include export for batch file. To be copid onto DAV1 
 
 
 
@@ -814,6 +815,7 @@ def reduceBatchFiles():
         sample_names.append(ds.SampleName)
         
         filetime = datetime.strptime(ds.start_time,'%Y-%m-%d %H:%M:%S')
+        
         if filetime < earliest_time :  #set earliest_time to the earliest file start_time
                 earliest_time = filetime 
         file_start_times.append(filetime)        
@@ -863,7 +865,7 @@ def reduceBatchFiles():
     if CreateBatchOverView_points.value:
         filename_out = CreateBatchOverView_points_file.value
         
-        header = ["filename", "sample name", "delta_time [s]", "q [A^-1]", "Int [cm^-1]", "dI [cm^-1]"]
+        header = ["filename", "sample name", "start_time", "time_stamp [s]", "delta_time [s]", "q [A^-1]", "Int [cm^-1]", "dI [cm^-1]"]
         
         if TemperatureVTE_setpoint.value:
             header.append("VTE_SP [C]")
@@ -886,6 +888,10 @@ def reduceBatchFiles():
                 for i in range(len(summary_all[j])):                
                     fp.write(file_names[j] +',')
                     fp.write(sample_names[j] +',')
+                    fp.write(str(file_start_times[j]) +',')
+                    fp.write(str(summary_all[j][i][0])+',') # q-value
+                    
+                    
                     td= (delta_time+ timedelta(seconds=summary_all[j][i][0]))
                     t_secs = td.seconds + td.days * 24 * 3600
                     fp.write(str(t_secs) +',') # time                    
@@ -1124,10 +1130,8 @@ class ReductionDataset:
         self.Bex           = list(ds['entry1/instrument/crystal/bex'])
         self.MonCts        = list(ds['entry1/monitor/bm1_counts'])
         self.MonCountTimes = list(ds['entry1/monitor/time'])      
-        #self.ScanVariablename  = str(ds['entry1/instrument/crystal/scan_variable'])
-        self.ScanVariablename  = 'm2om'
-        #self.ScanVariable = list(ds['entry1/instrument/crystal/' + self.ScanVariablename])
-        self.ScanVariable = list(ds['entry1/instrument/crystal/m2om'])        
+        self.ScanVariablename  = str(ds['entry1/instrument/crystal/scan_variable'])
+        self.ScanVariable = list(ds['entry1/instrument/crystal/' + self.ScanVariablename])        
         
         self.Angle = copy(self.ScanVariable)
         
@@ -1151,8 +1155,6 @@ class ReductionDataset:
         self.TimeStamp     = list(ds['entry1/time_stamp'])
         self.start_time    = str(ds['entry1/start_time'])
         
-
-        self.ScanVariable  = 'm2om'
         
         if TemperatureVTE_setpoint.value:   
             self.TempvTE_sp       = float(ds['entry1/sample/tc2/Loop1/setpoint'][0])

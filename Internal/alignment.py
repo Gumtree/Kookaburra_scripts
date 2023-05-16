@@ -65,9 +65,9 @@ def scan_device():
     
     axis_name.value = aname
     slog('runscan ' + str(device_name.value) + ' ' + str(scan_start.value) + ' ' + str(scan_stop.value) \
-                    + ' ' + str(number_of_points.value) + ' ' + str(scan_mode.value) + ' ' + str(scan_preset.value))
+                    + ' ' + str(sc_count.value) + ' ' + str(scan_mode.value) + ' ' + str(scan_preset.value))
     
-    sicsext.runscan(device_name.value, scan_start.value, scan_stop.value, number_of_points.value, 
+    sicsext.runscan(device_name.value, scan_start.value, scan_stop.value, sc_count.value, 
                     scan_mode.value, scan_preset.value, load_experiment_data, True, \
                     'HISTOGRAM_T')
     time.sleep(2)
@@ -248,7 +248,8 @@ def load_experiment_data(fullname = None):
             niter = norm.item_iter()
             if niter.next() <= 0:
                 niter.set_curr(1)
-            data = data / norm * avg
+#            data = data / norm * avg
+            data = data / norm
 
     ds2 = Dataset(data, axes=[axis])
     ds2.title = ds.id
@@ -268,7 +269,8 @@ def load_experiment_data(fullname = None):
                         niter = norm.item_iter()
                         if niter.next() <= 0:
                             niter.set_curr(1)
-                        di = di / norm * avg
+#                        di = di / norm * avg
+                        di = di / norm
                 di2 = Dataset(di, axes=[axis])
                 di2.title = 'tube {}'.format(i)
                 Plot1.add_dataset(di2)
@@ -337,8 +339,10 @@ def import_to_plot2():
                 niter = norm.item_iter()
                 if niter.next() <= 0:
                     niter.set_curr(1)
-                data = data / norm * avg
+#                data = data / norm * avg
+                data = data / norm
         if axis_name.value:
+            print axis_name.value
             axis = SimpleData(ds[str(axis_name.value)])
         else :
             axis_name.value = ds.axes[0].name
