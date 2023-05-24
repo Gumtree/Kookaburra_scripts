@@ -70,7 +70,7 @@ def scan_device():
     
     sicsext.runscan(device_name.value, scan_start.value, scan_stop.value, sc_count.value, 
                     scan_mode.value, scan_preset.value, load_experiment_data, True, \
-                    'HISTOGRAM_T')
+                    'HISTOGRAM_XY')
     time.sleep(2)
     peak_pos.value = float('NaN')
     FWHM.value = float('NaN')

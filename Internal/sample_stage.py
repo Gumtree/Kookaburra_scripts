@@ -95,6 +95,18 @@ class KKB06cells_som(AbstractSampleStage):
     ## 28.11.2018 LdC
     name = "KKB 6 Cells Tumbler som"
     in_service = True
+    index_samz_pairs = [('1', -13.8),
+                        ('2', 91.4),
+                        ('3', 196.6),
+                        ('4', 301.8), 
+                        ('5', 407.0), 
+                        ('6', 512.2),                      
+                        ]
+    
+class KKB06cells_som_12mm(AbstractSampleStage):
+    ## 28.11.2018 LdC
+    name = "KKB 6 Cells Tumbler som 12mm aperture"
+    in_service = False
     index_samz_pairs = [('1', -12.8),
                         ('2', 92.4),
                         ('3', 197.6),
