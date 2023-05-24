@@ -778,6 +778,7 @@ def loadConfigurations():
     cnfg_options.options = finalNames
     cnfg_options.value = finalNames[0] if finalNames else ''
 #    time.sleep(0.5)
+    applyConfiguration()
     
             
 def applyConfiguration():
