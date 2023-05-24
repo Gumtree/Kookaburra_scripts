@@ -3,7 +3,7 @@
 
 
 __script__.title = 'KKB Measurement Script'
-__script__.version = '4.0'
+__script__.version = '5.0'
 
 from gumpy.commons import sics
 from org.gumtree.gumnix.sics.control import ServerStatus
@@ -802,6 +802,7 @@ def loadConfigurations():
     cnfg_options.options = finalNames
     cnfg_options.value = finalNames[0] if finalNames else ''
 #    time.sleep(0.5)
+    applyConfiguration()
     
             
 def applyConfiguration():
@@ -831,6 +832,7 @@ def applyConfiguration():
         fh.close()
 
 def runConfigurations():
+    sics.clearInterrupt()
     checkInstrumentReady()    
     for file in cnfg_options.options:
         fh = open(cnfg_lookup[file], 'r')
@@ -1246,6 +1248,7 @@ def checkInstrumentReady():
                 slog('scan continued without green polysheild')
         
 def runSingleScan(): 
+    sics.clearInterrupt()
     checkInstrumentReady()
     startScan(ConfigurationModel())
         
