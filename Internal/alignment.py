@@ -55,6 +55,7 @@ scan_preset = Par('int', 0)
 scan_preset.title = 'Scan Preset'
 
 act_scan_device = Act('scan_device()', 'Scan on Device')
+act_scan_device.independent = True
 def scan_device():
     aname = device_name.value
     try:
@@ -102,6 +103,7 @@ fit_max = Par('float', 'NaN')
 peak_pos = Par('float', 'NaN')
 FWHM = Par('float', 'NaN')
 fact = Act('fit_curve()', 'Fit Again')
+fact.independent = True
 #offset_done = Par('bool', False)
 #act3 = Act('offset_s2()', 'Set Device Zero Offset')
 G2.add(data_name, show_individuals, normalise, axis_name, fix_axis, auto_fit, fit_min, fit_max, peak_pos, FWHM, fact)
@@ -109,15 +111,20 @@ G2.add(data_name, show_individuals, normalise, axis_name, fix_axis, auto_fit, fi
 G3 = Group('Plot 2')
 allow_duplication = Par('bool', False)
 act2 = Act('import_to_plot2()', text = 'Import Data Files to Plot2')
+act2.independent = True
 to_remove = Par('string', '', options=[])
 act3 = Act('remove_curve()', 'Remove selected curve')
+act3.independent = True
 plot2_fit_min = Par('float', 'NaN')
 plot2_fit_max = Par('float', 'NaN')
 plot2_act1 = Act('plot2_fit_curve()', 'Gaussian Fit Plot2')
+plot2_act1.independent = True
 plot2_peak_pos = Par('float', 'NaN')
 plot2_FWHM = Par('float', 'NaN')
 act_reset = Act('reset_fitting_plot2()', 'Remove Fitting')
+act_reset.independent = True
 act_remove_all = Act('remove_all_curves()', 'Remove All Curves')
+act_remove_all.independent = True
 G3.add(allow_duplication, act2, to_remove, act3, plot2_fit_min, plot2_fit_max, 
        plot2_act1, plot2_peak_pos, plot2_FWHM, act_reset, act_remove_all)
 
