@@ -807,6 +807,7 @@ def applyConfiguration():
         fh.close()
 
 def runConfigurations():
+    sics.clearInterrupt()
     checkInstrumentReady()    
     for file in cnfg_options.options:
         fh = open(cnfg_lookup[file], 'r')
@@ -1221,7 +1222,8 @@ def checkInstrumentReady():
             if not is_shielded:
                 slog('scan continued without green polysheild')
         
-def runSingleScan(): 
+def runSingleScan():
+    sics.clearInterrupt()
     checkInstrumentReady()
     startScan(ConfigurationModel())
         
