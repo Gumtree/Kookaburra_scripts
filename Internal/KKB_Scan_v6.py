@@ -879,7 +879,7 @@ def deleteConfiguration():
     cnfg_options.value = ''
     li = copy(cnfg_options.options)
     li.remove(file)
-    slog(file + ' deleted, options = ' + str(li))
+    slog(file + ' deleted')
     cnfg_options.options = li
                                 
 def applyConfiguration():
