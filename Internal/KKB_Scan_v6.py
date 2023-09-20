@@ -1,9 +1,10 @@
 
 # vs5. Add empty cell scan template
+# vs6. 2023-09-20 Norman added being able to add config files during run
 
 
 __script__.title = 'KKB Measurement Script'
-__script__.version = '5.0'
+__script__.version = '6.0'
 
 from gumpy.commons import sics
 from org.gumtree.gumnix.sics.control import ServerStatus
@@ -32,6 +33,8 @@ DatasetFactory.__cache_enabled__ = False
 SINGLE_TYPE = SWT.SINGLE
 SAVE_TYPE = SWT.SAVE
 MULTI_TYPE = SWT.MULTI
+_is_running = False
+_skip_current = False
 
 class __Display_Runnable__(Runnable):
     def __init__(self, type=SINGLE_TYPE, ext=['*.*']):
@@ -719,17 +722,32 @@ def sample(x0, y0, x1):
 ## RUN ##############################################
 
 cnfg_load_btn = Act('loadConfigurations()', 'Load Multiple Scan Parameters')
+cnfg_load_btn.independent = True
+cnfg_load_btn.colspan = 2
+
+cnfg_append_btn = Act('appendConfigurations()', 'Append Scan Parameters')
+cnfg_append_btn.independent = True
 
 cnfg_lookup = dict()
 cnfg_options = Par('string', '', options=[''], command="applyConfiguration()")
 cnfg_options.title = 'Read'
 
+cnfg_del = Act('deleteConfiguration()', 'Delete')
+cnfg_del.independent = True
+
+skip_curr = Act('skipCurrentRun()', 'Skip Current Run')
+skip_curr.enabled = False
+skip_curr.independent = True
+
 start_scan = Act('runSingleScan()', '#############   Run Single Scan   #############')
+start_scan.colspan = 3
 cnfg_run_btn = Act('runConfigurations()', '#############   Run Multiple Scans   #############')
+cnfg_run_btn.colspan = 3
 
 g0 = Group('Execute Scans')
-g0.numColumns = 1
-g0.add(start_scan, cnfg_load_btn, cnfg_options, cnfg_run_btn)
+g0.numColumns = 3
+g0.add(start_scan, cnfg_load_btn, cnfg_append_btn, cnfg_options, cnfg_del, 
+       skip_curr, cnfg_run_btn)
 
 ## Save/Load Configuration END############################################################################
 
@@ -804,7 +822,66 @@ def loadConfigurations():
 #    time.sleep(0.5)
     applyConfiguration()
     
+def appendConfigurations():
+    fileList = open_file_dialog(type=MULTI_TYPE, ext=['*.kkb'])
+    if not fileList:
+        return
+
+    finalDict = dict()
+    cname = cnfg_options.options
+    if len(cname) == 1 and cname[0] == "":
+        finalNames = []
+    else:
+        finalNames = copy(cname)
+
+    for path in fileList:
+        fh = open(path, 'r')
+        try:
+            p = Unpickler(fh)
+            if p.load() != 'KKB':
+                print 'ERROR:', os.path.basename(path)
+            else:
+                model = ConfigurationModel()
+                
+                # set defaults
+                model.negative = False  # old models may not have this attribute
+                
+                for att in dir(model):
+                    att_value = getattr(model, att)
+                    if (att.find('_') != 0) and ('instancemethod' not in str(type(att_value))):
+                        if p.load() != att:
+                            print 'FORMAT ERROR:', os.path.basename(path)
+                            break
+                            
+                        setattr(model, att, p.load())
+                else:
+                    name = os.path.basename(path)
+                    finalDict[name] = path
+                    finalNames.append(name)
+                    
+        finally:
+            fh.close()
             
+#    cnfg_lookup.clear()
+    cnfg_lookup.update(finalDict)
+    
+    cnfg_options.options = finalNames
+    if len(finalNames) == 1:
+        cnfg_options.value = finalNames[0]
+        applyConfiguration()
+
+def deleteConfiguration():
+    global _is_running, _skip_current
+    file = str(cnfg_options.value)
+    if file is None or file == 'None' or file.strip() == '':
+        slog("can't delete empty selection")
+        return
+    cnfg_options.value = ''
+    li = copy(cnfg_options.options)
+    li.remove(file)
+    slog(file + ' deleted, options = ' + str(li))
+    cnfg_options.options = li
+                                
 def applyConfiguration():
     file = str(cnfg_options.value)
     if file is None or file == 'None' or file.strip() == '':
@@ -831,12 +908,31 @@ def applyConfiguration():
     finally:
         fh.close()
 
+def skipCurrentRun():
+    global _is_running, _skip_current
+    if _is_running:
+        slog('skipping current collection')
+        _skip_current = True
+        sics.interrupt()
+    
 def runConfigurations():
+    global _is_running, _skip_current
+    if _is_running:
+        open_error('Error: system is busy with the current scan. Please wait until it finishes.')
+        return
     sics.clearInterrupt()
-    checkInstrumentReady()    
-    for file in cnfg_options.options:
+    checkInstrumentReady()  
+    idx = 0  
+    while True:
+#        for file in cnfg_options.options:
+        if idx < len(cnfg_options.options):
+            file = cnfg_options.options[idx]
+            idx += 1
+        else:
+            break
         fh = open(cnfg_lookup[file], 'r')
         try:
+            _is_running = True
             cnfg_options.command = ''
             cnfg_options.value = file
             applyConfiguration()
@@ -855,11 +951,27 @@ def runConfigurations():
                         setattr(model, att, p.load())
                 else:
                     print 'run:', file
-                    startScan(model)
+                    _skip_current = False
+                    try:
+                        skip_curr.enabled = True
+                        startScan(model)
+                        time.sleep(5)
+                        print cnfg_lookup[file]
+                        continue
+
+                    except Exception as e:
+                        if _skip_current:
+                            slog(str(e))
+                            slog('skipped collection for configuration: ' + file)
+                            _skip_current = False
+                        else:
+                            raise
+                    finally:
+                        skip_curr.enabled = False
         finally:
             cnfg_options.command = 'applyConfiguration()'
             fh.close()
-
+            _is_running = False
 
 # # Plot
 tubes_label = Par('label', 'Main Detector:')
@@ -1245,12 +1357,20 @@ def checkInstrumentReady():
             if not is_ready: 
                 slog('scan continued without instrument ready')
             if not is_shielded:
-                slog('scan continued without green polysheild')
+                slog('scan continued without green polyshield')
         
-def runSingleScan(): 
+def runSingleScan():
+    global _is_running
+    if _is_running:
+        open_error('Error: system is busy with the current scan. Please wait until it finishes.')
+        return
     sics.clearInterrupt()
     checkInstrumentReady()
-    startScan(ConfigurationModel())
+    try:
+        _is_running = True
+        startScan(ConfigurationModel())
+    finally:
+        _is_running = False
         
 def startScan(configModel):
     
