@@ -723,7 +723,6 @@ def sample(x0, y0, x1):
 
 cnfg_load_btn = Act('loadConfigurations()', 'Load Multiple Scan Parameters')
 cnfg_load_btn.independent = True
-cnfg_load_btn.colspan = 2
 
 cnfg_append_btn = Act('appendConfigurations()', 'Append Scan Parameters')
 cnfg_append_btn.independent = True
@@ -735,19 +734,22 @@ cnfg_options.title = 'Read'
 cnfg_del = Act('deleteConfiguration()', 'Delete')
 cnfg_del.independent = True
 
+start_scan = Act('runSingleScan()', '#############   Run Single Scan   #############')
+start_scan.colspan = 2
+cnfg_run_btn = Act('runConfigurations()', '#############   Run Multiple Scans   #############')
+cnfg_run_btn.colspan = 2
+
+curr_scan = Par('string', '')
+curr_scan.title = 'Current Scan'
+
 skip_curr = Act('skipCurrentRun()', 'Skip Current Run')
 skip_curr.enabled = False
 skip_curr.independent = True
 
-start_scan = Act('runSingleScan()', '#############   Run Single Scan   #############')
-start_scan.colspan = 3
-cnfg_run_btn = Act('runConfigurations()', '#############   Run Multiple Scans   #############')
-cnfg_run_btn.colspan = 3
-
 g0 = Group('Execute Scans')
-g0.numColumns = 3
+g0.numColumns = 2
 g0.add(start_scan, cnfg_load_btn, cnfg_append_btn, cnfg_options, cnfg_del, 
-       skip_curr, cnfg_run_btn)
+       cnfg_run_btn, curr_scan, skip_curr)
 
 ## Save/Load Configuration END############################################################################
 
@@ -922,12 +924,13 @@ def runConfigurations():
         return
     sics.clearInterrupt()
     checkInstrumentReady()  
-    idx = 0  
     while True:
 #        for file in cnfg_options.options:
-        if idx < len(cnfg_options.options):
-            file = cnfg_options.options[idx]
-            idx += 1
+        if len(cnfg_options.options) > 0 :
+            file = cnfg_options.options[0]
+            li = copy(cnfg_options.options)
+            li.remove(file)
+            cnfg_options.options = li
         else:
             break
         fh = open(cnfg_lookup[file], 'r')
@@ -935,6 +938,9 @@ def runConfigurations():
             _is_running = True
             cnfg_options.command = ''
             cnfg_options.value = file
+            cnfg_load_btn.enabled = False
+            cnfg_save_btn.enabled = False
+            curr_scan.value = file
             applyConfiguration()
             p = Unpickler(fh)
             if p.load() != 'KKB':
@@ -955,7 +961,7 @@ def runConfigurations():
                     try:
                         skip_curr.enabled = True
                         startScan(model)
-                        time.sleep(5)
+                        time.sleep(15)
                         print cnfg_lookup[file]
                         continue
 
@@ -969,6 +975,9 @@ def runConfigurations():
                     finally:
                         skip_curr.enabled = False
         finally:
+            cnfg_load_btn.enabled = True
+            cnfg_save_btn.enabled = True
+            curr_scan.value = ''
             cnfg_options.command = 'applyConfiguration()'
             fh.close()
             _is_running = False
@@ -1368,9 +1377,11 @@ def runSingleScan():
     checkInstrumentReady()
     try:
         _is_running = True
+        curr_scan.value = 'current configuration'
         startScan(ConfigurationModel())
     finally:
         _is_running = False
+        curr_scan.value = ''
         
 def startScan(configModel):
     
