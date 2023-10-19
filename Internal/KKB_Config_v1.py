@@ -21,7 +21,10 @@ from org.eclipse.swt import SWT
 from org.eclipse.swt.widgets import Display
 from java.io import File
 from gumpy.nexus.fitting import Fitting, GAUSSIAN_FITTING
-import math
+from au.gov.ansto.bragg.nbi.service.soap import CurrentProposalSOAPService
+from au.gov.ansto.bragg.nbi.service.soap import ProposalDBSOAPService
+from au.gov.ansto.bragg.nbi.service.soap.ProposalDBSOAPService import ProposalItems
+import math, re
 
 from Internal import sample_stage
 
@@ -189,6 +192,11 @@ if not os.path.exists(__EXPORT_PATH__):
     
 # # User Details
 
+prop_id = Par('string', '')
+prop_id.title = 'Proposal ID'
+
+prop_act = Act('getProposalInfo()', 'Auto Fill Proposal Information')
+
 user_name = Par('string', 'Christine', options=['Christine', 'Lela', 'Jitendra'])
 user_name.title = 'Name'
 
@@ -197,7 +205,7 @@ user_email.title = 'EMail'
 
 g0 = Group('User Details')
 g0.numColumns = 2
-g0.add(user_name, user_email)
+g0.add(prop_id, prop_act, user_name, user_email)
 
 # # Sample Details
 
@@ -215,7 +223,30 @@ g0 = Group('Sample  Details')
 g0.numColumns = 2
 g0.add(sample_name, sample_thickness, sample_description)
 
+proposalService = CurrentProposalSOAPService("KOOKABURRA");
 
+class ProposalListener(CurrentProposalSOAPService.IServiceListener):
+
+    def onLoaded(self, response) :
+        
+        if not response is None :
+            if response.containsKey('proposalCode') :
+                pid_text = response.get('proposalCode')
+                if pid_text is None or len(pid_text) == 0:
+                    return
+                prop_id.value = pid_text
+                pid = int(re.sub("[^0-9]", "", pid_text))
+                info = ProposalDBSOAPService.getProposalInfo(pid, 'kookaburra')
+                if not info is None:
+                    print dir(info)
+                    user_name.value = info.get(ProposalItems.PRINCIPAL_SCIENTIST)
+                    user_email.value = info.get(ProposalItems.PRINCIPAL_EMAIL)
+
+proposalService.addListener(ProposalListener())
+
+def getProposalInfo():
+    proposalService.load()
+    
 # Group('Sample Details').add(sample_name, sample_description, sample_thickness)
 
 
@@ -1913,6 +1944,10 @@ class ConfigurationModel:
                 d[key] = step[key].value
             self.stepInfo.append(d);
 
+        try:
+            self.prop_id = str(prop_id.value)
+        except:
+            pass
         self.user_name = str(user_name.value)
         self.user_email = str(user_email.value)
         
@@ -1982,6 +2017,8 @@ class ConfigurationModel:
             
         setScanMode()
 
+        if hasattr(self, 'prop_id'):
+            prop_id.value = self.prop_id
         user_name.value = self.user_name
         user_email.value = self.user_email
         
