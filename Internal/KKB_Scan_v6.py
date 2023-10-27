@@ -233,14 +233,21 @@ class ProposalListener(CurrentProposalSOAPService.IServiceListener):
             if response.containsKey('proposalCode') :
                 pid_text = response.get('proposalCode')
                 if pid_text is None or len(pid_text) == 0:
+                    print "Invalid proposal ID."
                     return
                 prop_id.value = pid_text
                 pid = int(re.sub("[^0-9]", "", pid_text))
                 info = ProposalDBSOAPService.getProposalInfo(pid, 'kookaburra')
                 if not info is None:
-                    print dir(info)
+#                    print dir(info)
                     user_name.value = info.get(ProposalItems.PRINCIPAL_SCIENTIST)
                     user_email.value = info.get(ProposalItems.PRINCIPAL_EMAIL)
+                else:
+                    print "No information is available for proposal " + str(pid_text)
+            else:
+                print "No proposal has been scheduled for now."
+        else:
+            print "No proposal id found from portal DB, connection failed."
 
 proposalService.addListener(ProposalListener())
 
