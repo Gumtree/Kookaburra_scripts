@@ -1542,19 +1542,28 @@ def startScan(configModel):
     (ss2u, ss2d) = getSlitValues(ss2vg, ss2vo, ss2u0, ss2d0, 37.0, -39.5)
     (ss2r, ss2l) = getSlitValues(ss2hg, ss2ho, ss2r0, ss2l0, 35.0, -35.0)
     
-    # apply slits
+    # drive slits set 1
     run = {}
     run['ss1u'] = ss1u
     run['ss1d'] = ss1d
     run['ss1r'] = ss1r
     run['ss1l'] = ss1l
     
+#    sics.multiDrive(run)
+    dc = 'drive'
+    for key in run:
+        dc += ' ' + key + ' ' + str(run[key])
+
+    sics.execute(dc)
+
+    run = {}
     run['ss2u'] = ss2u
     run['ss2d'] = ss2d
     run['ss2r'] = ss2r
     run['ss2l'] = ss2l
 
 #    sics.multiDrive(run)
+    # drive slits set 2
     dc = 'drive'
     for key in run:
         dc += ' ' + key + ' ' + str(run[key])
