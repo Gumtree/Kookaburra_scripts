@@ -1656,7 +1656,7 @@ def startScan(configModel):
         # start/stop hmm
         if mode == 'count_roi':
             sics.execute('histmem preset 1')
-            time.sleep(1)
+#            time.sleep(1)
             sics.execute('histmem start')
             time.sleep(5)
             waitUntilSicsIs(ServerStatus.EAGER_TO_EXECUTE)
@@ -1673,14 +1673,14 @@ def startScan(configModel):
             
             print 'drive %s %.6f' % (scanVariable, angle)
             
-            # sics.drive(scanVariable, float(angle))
-            sics.execute('drive %s %.6f' % (scanVariable, angle))
-            time.sleep(10)
-            waitUntilSicsIs(ServerStatus.EAGER_TO_EXECUTE)
+            sics.drive(scanVariable, float(angle))
+#            sics.execute('drive %s %.6f' % (scanVariable, angle))
+#            time.sleep(10)
+#            waitUntilSicsIs(ServerStatus.EAGER_TO_EXECUTE)
            
             print 'drive done'
             
-            time.sleep(1)
+#            time.sleep(1)
             
             if mode == 'ba':
                 sics.execute('histmem ba roi roi')
@@ -1692,7 +1692,8 @@ def startScan(configModel):
                 sics.execute('histmem ba undermintime ba_maxdetcount')
 
                 print 'histmem start'
-                sics.execute('histmem start block')
+#                sics.execute('histmem start block')
+                sics.execute('histmem start')
                 
                 time0 = time.time()
                 while sicsController.getServerStatus().equals(ServerStatus.EAGER_TO_EXECUTE):
@@ -1715,9 +1716,18 @@ def startScan(configModel):
                     else:
                         sics.execute('histmem preset %i' % preset)
                         
-                    time.sleep(5)
+#                    time.sleep()
                     sics.execute('histmem start')
-                    time.sleep(10)
+#                    time.sleep(10)
+                    time0 = time.time()
+                    while sicsController.getServerStatus().equals(ServerStatus.EAGER_TO_EXECUTE):
+                        if time.time() - time0 > 15.0:
+                            print 'WARNING: HM may not have started counting. Gumtree will save anyway.'
+                            break 
+                        else:
+                            time.sleep(0.1)
+    
+                    time0 = time.time()
                     
                     if mode == 'count_roi':
                         print 'count_roi'
