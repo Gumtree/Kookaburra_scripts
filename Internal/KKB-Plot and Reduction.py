@@ -22,7 +22,8 @@ __script__.version = '2.0'
 # December 21: can now use either tube6 or bm as monitor
 # December 27: include new file with Tsas m2om0 I0 and Iwide in progress
 # 2022 Jan 22: include export for batch file. To be copid onto DAV1 
-# 2022 June 15: incorporate 
+# 2022 June 15: incorporate ??
+# 2024 Feb: change output for ambient background
 
 
 from math import sqrt, sin, exp
@@ -1028,6 +1029,7 @@ def bkgFilesTake():
     
     bkgLevel.value = sum(bkg.DetCtr)/len(bkg.Angle)
     bkgLevel_Error.value = sum(bkg.ErrDetCtr)/len(bkg.Angle)
+    #bkgLevel_stat_Error.value = sum(bkg.ErrDetCtr)/len(bkg.Angle)
     
     bkg.FindZeroAngle()
     bkg.DetermineQVals()
@@ -1776,7 +1778,7 @@ class ReductionDataset:
         
         scale = 1.0 / (self.TransWide * self.Thick * dOmega * emp.PeakVal)                
         #print 'scale:' , scale   
-             
+        #print dOmega     
         maxq = emp.Qvals[-1]
         for i in xrange(len(self.Qvals)):
             wq = self.Qvals[i]

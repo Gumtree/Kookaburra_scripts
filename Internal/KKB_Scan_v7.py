@@ -4,7 +4,7 @@
 
 
 __script__.title = 'KKB Measurement Script'
-__script__.version = '6.0'
+__script__.version = '7.0'
 
 from gumpy.commons import sics
 from org.gumtree.gumnix.sics.control import ServerStatus
@@ -1658,6 +1658,10 @@ def startScan(configModel):
             print 'run samz %.2f' % samz
 #            sics.execute('run samz %.2f' % samz)
 # change to use drive command to avoid driving another motor before this finishes. By NXI at 21 July 25.
+            try:
+                sics.run_command_timeout('status', timeout = 10)
+            except:
+                slog('timeout waiting for status command in 10s')
             sics.drive('samz', float(samz))
             # sics.execute('prun samz 2' % samz) !!!
 #            time.sleep(1)
@@ -1712,7 +1716,7 @@ def startScan(configModel):
                 time0 = time.time()
                 while sicsController.getServerStatus().equals(ServerStatus.EAGER_TO_EXECUTE):
 # sometime SICS took longer time so start counting on histmem. Updated by Norman on 21 July 25.
-                    if time.time() - time0 > 25.0:
+                    if time.time() - time0 > 60.0:
                         print 'WARNING: HM may not have started counting. Gumtree will save anyway.'
                         break 
                     else:
@@ -1736,7 +1740,7 @@ def startScan(configModel):
 #                    time.sleep(10)
                     time0 = time.time()
                     while sicsController.getServerStatus().equals(ServerStatus.EAGER_TO_EXECUTE):
-                        if time.time() - time0 > 15.0:
+                        if time.time() - time0 > 60.0:
                             print 'WARNING: HM may not have started counting. Gumtree will save anyway.'
                             break 
                         else:

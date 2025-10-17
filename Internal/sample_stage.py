@@ -97,7 +97,7 @@ class KKB06cells_som(AbstractSampleStage):
     ## 28.11.2018 LdC
     name = "KKB 6 Cells Tumbler"
     in_service = True
-    index_samz_pairs = [('1', -28.8),
+    index_samz_pairs = [('1', -28.0),
                         ('2', 76.4),
                         ('3', 181.6),
                         ('4', 286.8), 
@@ -109,11 +109,11 @@ class KKB06cells_som12mm(AbstractSampleStage):
     name = "KKB 6 Cells Tumbler 12mm"
     in_service = False
     index_samz_pairs = [
-                        ('2', 90.2),
-                        ('3', 195.4),
-                        ('4', 300.6), 
-                        ('5', 405.8), 
-                        ('6', 511),                      
+                        ('2', 75.7),
+                        ('3', 180.9),
+                        ('4', 286.1), 
+                        ('5', 391.3), 
+                        ('6', 496.5),                      
                         ]
 
     
@@ -122,11 +122,11 @@ class KKB05cells_som(AbstractSampleStage):
     name = "KKB 5 Cells som"
     in_service = False
     index_samz_pairs = [
-                        ('1', -23.0), 
-                        ('2', 122.5), 
-                        ('3', 267.5), 
-                        ('4', 413.5),
-                        ('5', 558.5),
+                        ('1', -23.5), 
+                        ('2', 123), 
+                        ('3', 268), 
+                        ('4', 414),
+                        ('5', 559),
                         ]   
 
 

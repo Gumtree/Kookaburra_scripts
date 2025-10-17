@@ -99,11 +99,20 @@ ss1vo_tick.title = '  ss1vo'
 ss1ho_tick = Par('bool', False)
 ss1ho_tick.title = '  ss1ho'
 
+samom_tick = Par('bool', False)
+samom_tick.title = '  samom'
+
+ss1om_tick = Par('bool', False)
+ss1om_tick.title = '  ss1om'
+
+apsel_tick = Par('bool', False)
+apsel_tick.title = '  apsel'
+
 g0 = Group('Instrument Settings:')
 g0.numColumns = 6
 g0.add(pmchi_tick, pmom_tick, bex_tick, m1chi_tick, m1x_tick, m1om_tick,
-       m2chi_tick, m2x_tick, m2y_tick, m2om_tick, mdet_tick,
-       ss1vg_tick, ss1hg_tick, ss1vo_tick, ss1ho_tick)
+       m2chi_tick, m2x_tick, m2y_tick, m2om_tick, mdet_tick, 
+       ss1vg_tick, ss1hg_tick, ss1vo_tick, ss1ho_tick, samom_tick, ss1om_tick, apsel_tick,)
 
 
 temp_CellHeater_tick = Par('bool', False)
@@ -421,7 +430,36 @@ def __run_script__(fns):
                     data.append(str(ds.ss1ho[0]))
                 except:
                     data.append(str(ds.ss1ho))
-                header.append('ss1ho')            
+                header.append('ss1ho')   
+                
+            if samom_tick.value:                
+                ds.__iDictionary__.addEntry('samom', 'entry1/sample/som')
+                #print 'ds.ss1ho', str(ds.samom[0])
+                try:
+                    data.append(str(ds.samom[0]))
+                except:
+                    data.append(str(ds.samom))
+                header.append('samom') 
+                
+            if ss1om_tick.value:                
+                ds.__iDictionary__.addEntry('ss1om', 'entry1/sample/presam_slitrot')
+                #print 'ds.ss1ho', str(ds.ss1om[0])
+                try:
+                    data.append(str(ds.ss1om[0]))
+                except:
+                    data.append(str(ds.ss1om))
+                header.append('ss1om') 
+                
+            if apsel_tick.value:                
+                ds.__iDictionary__.addEntry('apsel', 'entry1/slits/apsel')
+                #print 'ds.ss1ho', str(ds.ss1om[0])
+                try:
+                    data.append(str(ds.apsel[0]))
+                except:
+                    data.append(str(ds.apsel))
+                header.append('apsel')
+                
+                         
             
             if temp_CellHeater_tick.value:                
                 #print 'ds.ss1ho', str(ds.setH6[0])
