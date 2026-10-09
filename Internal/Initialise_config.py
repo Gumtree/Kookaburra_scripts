@@ -332,4 +332,4 @@ Display.getDefault().asyncExec(__display_run__)
 
 sics.ready = True
 
-load_script('KKB_Config.py')
+load_script('KKB_Config_v1.py')

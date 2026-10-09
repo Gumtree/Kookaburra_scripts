@@ -779,6 +779,21 @@ def saveConfiguration():
                 p.dump(att)
                 p.dump(att_value)
         
+        finalDict = dict()
+        cname = cnfg_options.options
+        if len(cname) == 1 and cname[0] == "":
+            finalNames = []
+        else:
+            finalNames = copy(cname)
+            
+        name = os.path.basename(file)
+        if not name in finalNames :
+            finalDict[name] = file
+            finalNames.append(name)
+            cnfg_lookup.update(finalDict)
+            cnfg_options.options = finalNames
+            cnfg_options.value = name            
+
         print 'saved'
         
     finally:
@@ -812,6 +827,26 @@ def loadConfiguration():
         fh.close()
 ## Scan parameters END #########################################################################
 
+## Load parameters ####################################################
+
+cnfg_load_btn = Act('loadConfigurations()', 'Load Multiple Scan Parameters')
+cnfg_load_btn.independent = True
+
+cnfg_append_btn = Act('appendConfigurations()', 'Append Scan Parameters')
+cnfg_append_btn.independent = True
+
+cnfg_lookup = dict()
+cnfg_options = Par('string', '', options=[''], command="applyConfiguration()")
+cnfg_options.title = 'Read'
+
+cnfg_del = Act('deleteConfiguration()', '<- Delete Selection from List')
+cnfg_del.independent = True
+
+g0 = Group('Load Scan Parameters')
+g0.numColumns = 2
+g0.add(cnfg_load_btn, cnfg_append_btn, cnfg_options, cnfg_del)
+
+## Load parameters END ######################################################
 
 # # Plot
 tubes_label = Par('label', 'Main Detector:')
@@ -2085,3 +2120,144 @@ class ConfigurationModel:
         else:
             background_frames.enabled = False
             background_threshold.enabled = False
+
+def loadConfigurations():
+    fileList = open_file_dialog(type=MULTI_TYPE, ext=['*.kkb'])
+    if not fileList:
+        return
+
+    finalDict = dict()
+    finalNames = []
+
+    for path in fileList:
+        fh = open(path, 'r')
+        try:
+            p = Unpickler(fh)
+            if p.load() != 'KKB':
+                print 'ERROR:', os.path.basename(path)
+            else:
+                model = ConfigurationModel()
+                
+                # set defaults
+                model.negative = False  # old models may not have this attribute
+                
+                for att in dir(model):
+                    att_value = getattr(model, att)
+                    if (att.find('_') != 0) and ('instancemethod' not in str(type(att_value))):
+                        if p.load() != att:
+                            print 'FORMAT ERROR:', os.path.basename(path)
+                            break
+                            
+                        setattr(model, att, p.load())
+                else:
+                    name = os.path.basename(path)
+                    finalDict[name] = path
+                    finalNames.append(name)
+                    
+        finally:
+            fh.close()
+            
+    cnfg_lookup.clear()
+    cnfg_lookup.update(finalDict)
+    
+    cnfg_options.options = finalNames
+    cnfg_options.value = finalNames[0] if finalNames else ''
+#    time.sleep(0.5)
+    applyConfiguration()
+    
+def appendConfigurations():
+    fileList = open_file_dialog(type=MULTI_TYPE, ext=['*.kkb'])
+    if not fileList:
+        return
+
+    finalDict = dict()
+    cname = cnfg_options.options
+    if len(cname) == 1 and cname[0] == "":
+        finalNames = []
+    else:
+        finalNames = copy(cname)
+
+    err = ''
+    
+    for path in fileList:
+        fh = open(path, 'r')
+        try:
+            p = Unpickler(fh)
+            if p.load() != 'KKB':
+                print 'ERROR:', os.path.basename(path)
+                err += 'ERROR: failed to read ' + os.path.basename(path) + '\n'
+            else:
+                model = ConfigurationModel()
+                
+                # set defaults
+                model.negative = False  # old models may not have this attribute
+                
+                for att in dir(model):
+                    att_value = getattr(model, att)
+                    if (att.find('_') != 0) and ('instancemethod' not in str(type(att_value))):
+                        if p.load() != att:
+                            print 'FORMAT ERROR:', os.path.basename(path)
+                            err += 'FORMAT ERROR: failed to read ' \
+                                + os.path.basename(path)+ '\n'
+                            break
+                            
+                        setattr(model, att, p.load())
+                else:
+                    name = os.path.basename(path)
+                    if name in finalNames :
+                        print 'ERROR: ' + name + ' already exists in the list'
+                        err += 'ERROR: ' + name + ' already exists in the list, refuse to load another. \n'
+                        continue
+                    finalDict[name] = path
+                    finalNames.append(name)
+                    
+        finally:
+            fh.close()
+            
+#    cnfg_lookup.clear()
+    cnfg_lookup.update(finalDict)
+    
+    cnfg_options.options = finalNames
+    if len(finalNames) == 1:
+        cnfg_options.value = finalNames[0]
+        applyConfiguration()
+    if len(err) > 0:
+        open_warning(err)
+
+def deleteConfiguration():
+    global _is_running, _skip_current
+    file = str(cnfg_options.value)
+    if file is None or file == 'None' or file.strip() == '':
+        slog("can't delete empty selection")
+        return
+    cnfg_options.value = ''
+    li = copy(cnfg_options.options)
+    li.remove(file)
+    slog(file + ' deleted')
+    cnfg_options.options = li
+                                
+def applyConfiguration():
+    file = str(cnfg_options.value)
+    if file is None or file == 'None' or file.strip() == '':
+        return
+
+    fh = open(cnfg_lookup[file], 'r')
+    try:
+        p = Unpickler(fh)
+        if p.load() != 'KKB':
+            print 'ERROR:', file
+        else:
+            model = ConfigurationModel()
+            for att in dir(model):
+                att_value = getattr(model, att)
+                if (att.find('_') != 0) and ('instancemethod' not in str(type(att_value))):
+                    if p.load() != att:
+                        print 'FORMAT ERROR:', file
+                        break
+                        
+                    setattr(model, att, p.load())
+            else:
+                # print 'read:', file
+                model.apply()
+    finally:
+        fh.close()
