@@ -89,31 +89,56 @@ class AbstractSampleStage():
 # December 2015
 
 
-                      
+class KKB08cells_12mm(AbstractSampleStage):
+    ## 07.06.2026 LdC
+    name = "KKB 8 Cells Tumbler 12mm Cd"
+    in_service = False
+    index_samz_pairs = [('1', 10.3),
+                        ('2', 90.3),
+                        ('3', 170.3),
+                        ('4', 250.3), 
+                        ('5', 330.3), 
+                        ('6', 410.3),
+                        ('7', 490.3), 
+                        ('8', 570.3),                                           
+                        ]   
 
-
+class KKB08cells_29mmGd(AbstractSampleStage):
+    ## 07.06.2026 LdC
+    name = "KKB 8 Cells Tumbler 29 mm Gd"
+    in_service = True
+    index_samz_pairs = [('1', 11.6),
+                        ('2', 91.6),
+                        ('3', 171.6),
+                        ('4', 251.6), 
+                        ('5', 331.6), 
+                        ('6', 411.6),
+                        ('7', 491.6), 
+                        ('8', 571.6),                                           
+                        ]  
     
 class KKB06cells_som(AbstractSampleStage):
     ## 28.11.2018 LdC
     name = "KKB 6 Cells Tumbler"
-    in_service = True
+    in_service = False
     index_samz_pairs = [('1', -28.0),
                         ('2', 76.4),
                         ('3', 181.6),
                         ('4', 286.8), 
                         ('5', 392.0), 
-                        ('6', 497.2),                      
+                        ('6', 497.2),                   
                         ]
+    
 class KKB06cells_som12mm(AbstractSampleStage):
     ## 23.06.2023 LdC
     name = "KKB 6 Cells Tumbler 12mm"
     in_service = False
-    index_samz_pairs = [
-                        ('2', 75.7),
-                        ('3', 180.9),
-                        ('4', 286.1), 
-                        ('5', 391.3), 
-                        ('6', 496.5),                      
+    index_samz_pairs = [('1', -28.0), # should be -29.8 with paerture bottom right
+                        ('2', 74.7),
+                        ('3', 179.9),
+                        ('4', 285.1), 
+                        ('5', 390.3), 
+                        ('6', 495.5),                      
                         ]
 
     
@@ -122,15 +147,28 @@ class KKB05cells_som(AbstractSampleStage):
     name = "KKB 5 Cells som"
     in_service = False
     index_samz_pairs = [
-                        ('1', -23.5), 
-                        ('2', 123), 
-                        ('3', 268), 
-                        ('4', 414),
-                        ('5', 559),
+                        ('1', -25.5), 
+                        ('2', 121), 
+                        ('3', 266), 
+                        ('4', 412),
+                        ('5', 557),
                         ]   
 
 
-    
+
+class KKB05cells_som_12mm(AbstractSampleStage):
+    # updated 12.2.2022 29mm aperture aligned by eye
+    name = "KKB 5 Cells som 12mm"
+    in_service = False
+    index_samz_pairs = [
+                        ('1', -25.0), 
+                        ('2', 120.5), 
+                        ('3', 266.0), 
+                        ('4', 411.5),
+                        ('5', 557.0),
+                        ]   
+
+  
     
 class KKB16Cells_som(AbstractSampleStage):
     name = "KKB 16 Cells som"

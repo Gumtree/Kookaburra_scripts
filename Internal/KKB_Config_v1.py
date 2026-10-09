@@ -832,19 +832,19 @@ def loadConfiguration():
 cnfg_load_btn = Act('loadConfigurations()', 'Load Multiple Scan Parameters')
 cnfg_load_btn.independent = True
 
-cnfg_append_btn = Act('appendConfigurations()', 'Append Scan Parameters')
-cnfg_append_btn.independent = True
+#cnfg_append_btn = Act('appendConfigurations()', 'Append Scan Parameters')
+#cnfg_append_btn.independent = True
 
 cnfg_lookup = dict()
 cnfg_options = Par('string', '', options=[''], command="applyConfiguration()")
 cnfg_options.title = 'Read'
 
-cnfg_del = Act('deleteConfiguration()', '<- Delete Selection from List')
-cnfg_del.independent = True
+#cnfg_del = Act('deleteConfiguration()', '<- Delete Selection from List')
+#cnfg_del.independent = True
 
 g0 = Group('Load Scan Parameters')
 g0.numColumns = 2
-g0.add(cnfg_load_btn, cnfg_append_btn, cnfg_options, cnfg_del)
+g0.add(cnfg_load_btn, cnfg_options)
 
 ## Load parameters END ######################################################
 

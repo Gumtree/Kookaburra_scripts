@@ -349,7 +349,7 @@ def import_to_plot2():
 #                data = data / norm * avg
                 data = data / norm
         if axis_name.value:
-            print axis_name.value
+#            print axis_name.value
             axis = SimpleData(ds[str(axis_name.value)])
         else :
             axis_name.value = ds.axes[0].name
@@ -362,6 +362,7 @@ def import_to_plot2():
         Plot2.x_label = axis_name.value
         Plot2.y_label = dname
         Plot2.title = 'Overlay'
+        print '{}: {}'.format(ds.id, ds2.mean())
         rlist = copy(to_remove.options)
         rlist.append(str(ds2.title))
         to_remove.options = rlist
